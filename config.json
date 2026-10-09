@@ -1,0 +1,21 @@
+{
+  "clubName": "Davoz Zwevegem",
+  "stamnummer": "W-0830",
+  "provinceId": 9,
+  "teams": {
+    "WP3DA": { "label": "Dames A", "division": "Promo 3 Dames", "order": 1 },
+    "WP4DC": { "label": "Dames B", "division": "Promo 4 Dames", "order": 2 },
+    "WMU17N2-H": { "label": "Meisjes U17", "division": "U17 niveau 2", "order": 3 },
+    "WMU15N2-C": { "label": "Meisjes U15 A", "division": "U15 niveau 2", "order": 4 },
+    "WMU15N3-F": { "label": "Meisjes U15 B", "division": "U15 niveau 3", "order": 5 },
+    "WMU13N3-G": { "label": "Meisjes U13 A", "division": "U13 niveau 3", "order": 6 },
+    "WMU13N3-H": { "label": "Meisjes U13 B", "division": "U13 niveau 3", "order": 7 },
+    "Recrea RA": { "label": "Recreanten", "division": "Recreatief reeks A", "order": 8 },
+    "VT2BR1-H": { "label": "Jeugd A", "division": "Reeks VT2BR1-H", "order": 9 },
+    "VT20R1-E": { "label": "Jeugd B", "division": "Reeks VT20R1-E", "order": 10 },
+    "WBDP": { "label": "Beker dames", "division": "Beker West-Vlaanderen", "cup": true },
+    "WB17M": { "label": "Beker U17", "division": "Beker West-Vlaanderen", "cup": true },
+    "WB15M": { "label": "Beker U15", "division": "Beker West-Vlaanderen", "cup": true },
+    "WB13M": { "label": "Beker U13", "division": "Beker West-Vlaanderen", "cup": true }
+  }
+}

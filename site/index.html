@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Davoz Zwevegem — uitslagen</title>
+  <meta name="description" content="Uitslagen, kalender en klassement van alle ploegen van volleybalclub Davoz Zwevegem.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40' fill='none' stroke='%23FF7A1A' stroke-width='3'%3E%3Ccircle cx='20' cy='20' r='17'/%3E%3Cpath d='M20 3c-2 8 0 16 8 22M5 26c8-3 16-2 22 6M33 9c-7 2-12 7-13 14'/%3E%3C/svg%3E">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-top">
+      <a class="brand" href="#">
+        <svg class="ball" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17"/><path d="M20 3c-2 8 0 16 8 22"/><path d="M5 26c8-3 16-2 22 6"/><path d="M33 9c-7 2-12 7-13 14"/></svg>
+        <span>Davoz Zwevegem</span>
+      </a>
+      <span class="updated" id="updated"></span>
+    </div>
+    <nav class="wrap team-nav" aria-label="Kies een ploeg" id="team-nav"></nav>
+  </header>
+
+  <main class="wrap" id="app" aria-live="polite">
+    <p class="loading">Uitslagen laden…</p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>Data: VolleyAdmin2 — Volley Vlaanderen. Uitslagen worden ingevoerd door de thuisploeg en hier elk uur bijgewerkt.</span>
+    </div>
+  </footer>
+</body>
+</html>
