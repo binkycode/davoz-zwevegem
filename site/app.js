@@ -39,9 +39,14 @@ function renderNav(current) {
   if (active) nav.scrollLeft = active.offsetLeft - (nav.clientWidth - active.offsetWidth) / 2;
 }
 
-const badge = (m) => !m.result
-  ? '<span class="badge pending" aria-label="Nog geen uitslag">–</span>'
-  : won(m) ? '<span class="badge win" aria-label="Gewonnen">W</span>' : '<span class="badge" aria-label="Verloren">V</span>';
+// Youth series play a fixed number of sets, so a match can end in a draw (2–2).
+const outcome = (m) => !m.result ? null : m.result.home === m.result.away ? 'G' : won(m) ? 'W' : 'V';
+const BADGES = {
+  W: '<span class="badge win" aria-label="Gewonnen">W</span>',
+  G: '<span class="badge draw" aria-label="Gelijkspel">G</span>',
+  V: '<span class="badge" aria-label="Verloren">V</span>'
+};
+const badge = (m) => BADGES[outcome(m)] ?? '<span class="badge pending" aria-label="Nog geen uitslag">–</span>';
 
 const name = (m, side) => {
   const us = side === 'home' ? m.usHome : !m.usHome;
@@ -83,21 +88,21 @@ function scoreboard(t, m, { title, link }) {
 
 function statsCard(t, played) {
   const row = t.ranking.find((r) => r.teamId === t.teamId);
-  const w = row ? row.won : played.filter(won).length;
-  const l = row ? row.lost : played.length - w;
+  // Counted from the matches: VolleyAdmin2 leaves the win/loss counters at 0 for youth series.
+  const count = (o) => played.filter((m) => outcome(m) === o).length;
+  const [w, g, l] = [count('W'), count('G'), count('V')];
+  const record = g ? `${w}–${g}–${l}` : `${w}–${l}`;
   let sw = 0, sl = 0;
   for (const m of played) { sw += m.usHome ? m.result.home : m.result.away; sl += m.usHome ? m.result.away : m.result.home; }
   if (row) { sw = row.setsWon; sl = row.setsLost; }
-  const form = played.slice(-5);
   return `
     <section class="card" aria-labelledby="cijfers">
       <h2 id="cijfers" class="section-title" style="margin-bottom:14px">Seizoen in cijfers</h2>
       <div class="stat-grid">
-        <div class="stat"><b>${w}–${l}</b><span>W – V</span></div>
+        <div class="stat"><b>${record}</b><span>${g ? 'W – G – V' : 'W – V'}</span></div>
         <div class="stat"><b>${sw}–${sl}</b><span>Sets</span></div>
         <div class="stat"><b>${row ? row.points : '—'}</b><span>${row ? `Punten · ${row.pos}e` : 'Punten'}</span></div>
       </div>
-      ${form.length ? `<div class="form"><span class="muted" style="font-size:14px">Vorm (oud → recent)</span><div class="form-row">${form.map(badge).join('')}</div></div>` : ''}
     </section>`;
 }
 
@@ -114,15 +119,17 @@ function bickyCard(t, played) {
 
 function rankingCard(t) {
   if (!t.ranking.length) return '';
+  // Without win/loss counters in the feed (youth series) the column would only show 0–0.
+  const showRecord = t.ranking.some((r) => r.won + r.lost > 0);
   return `
     <section class="card" aria-labelledby="klassement">
       <div class="section-head"><h2 id="klassement" class="section-title">Klassement</h2><span class="muted" style="font-size:14px">${esc(t.division)}</span></div>
       <div class="table-box">
         <table>
-          <thead><tr><th scope="col">#</th><th scope="col">Ploeg</th><th scope="col" class="num">M</th><th scope="col" class="num">W–V</th><th scope="col" class="num">Sets</th><th scope="col" class="num">Ptn</th></tr></thead>
+          <thead><tr><th scope="col">#</th><th scope="col">Ploeg</th><th scope="col" class="num">M</th>${showRecord ? '<th scope="col" class="num">W–V</th>' : ''}<th scope="col" class="num">Sets</th><th scope="col" class="num">Ptn</th></tr></thead>
           <tbody>${t.ranking.map((r) => `
             <tr${r.teamId === t.teamId ? ' class="us"' : ''}>
-              <td>${r.pos}</td><td>${esc(r.name)}</td><td class="num">${r.played}</td><td class="num">${r.won}–${r.lost}</td>
+              <td>${r.pos}</td><td>${esc(r.name)}</td><td class="num">${r.played}</td>${showRecord ? `<td class="num">${r.won}–${r.lost}</td>` : ''}
               <td class="num">${r.setsWon}–${r.setsLost}</td><td class="num pts">${r.points}</td>
             </tr>`).join('')}</tbody>
         </table>

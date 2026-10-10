@@ -119,15 +119,13 @@ a.match:hover { color: var(--ink); border-color: var(--muted); }
 .match-score b { font: 800 30px/1 var(--display); }
 .badge { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; font: 800 18px var(--display); background: var(--loss); color: var(--ink); }
 .badge.win { background: var(--ink); color: var(--card); }
+.badge.draw { background: var(--card); border: 2px solid var(--muted); color: var(--ink); }
 .badge.pending { background: none; border: 1px dashed var(--line); color: var(--muted); font-size: 14px; }
 
 /* Side */
 .stat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .stat b { display: block; font: 800 38px/1 var(--display); }
 .stat span { font-size: 14px; color: var(--muted); }
-.form { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
-.form-row { display: flex; gap: 6px; flex-wrap: wrap; }
-.form-row .badge { width: 30px; height: 30px; font-size: 16px; }
 .table-box { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 15px; }
 th { text-align: left; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; padding: 6px 4px; }
