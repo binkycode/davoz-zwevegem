@@ -107,10 +107,7 @@ function bickyCard(t, played) {
   return `
     <section class="card bicky-card" aria-labelledby="bicky">
       <div class="bicky-icon">${burger(t)}</div>
-      <div>
-        <h2 id="bicky" class="section-title">Bicky-sets</h2>
-        <span class="muted">Gewonnen sets waarin de tegenstander minder dan ${t.bickyBelow} punten scoorde</span>
-      </div>
+      <h2 id="bicky" class="section-title">Bicky-sets</h2>
       <b class="bicky-count">${count}</b>
     </section>`;
 }
