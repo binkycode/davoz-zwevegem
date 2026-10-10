@@ -1,0 +1,213 @@
+{
+  "Avelgem, Sporthal Ter Muncken": {
+    "street": "Doorniksesteenweg 226",
+    "city": "8580 Avelgem",
+    "lat": 50.7662086,
+    "lng": 3.442749
+  },
+  "Beveren-Leie, De Averul": {
+    "street": "Koning Albertstraat 18",
+    "city": "8791 Beveren Leie",
+    "lat": 50.8750305,
+    "lng": 3.344063
+  },
+  "Bissegem, Ter Biezen": {
+    "street": "Heulsestraat 82",
+    "city": "8501 Bissegem",
+    "lat": 50.8277168,
+    "lng": 3.2322693
+  },
+  "Deerlijk, Gaverhal": {
+    "street": "V. de Solartstraat 30",
+    "city": "8540 Deerlijk",
+    "lat": 50.8441849,
+    "lng": 3.3609824
+  },
+  "Gits, Sporthal Ogierlande": {
+    "street": "Torhoutstraat 10",
+    "city": "8830 Gits",
+    "lat": 50.9978256,
+    "lng": 3.0974588
+  },
+  "Gullegem, Gemeentelijke Sporthal": {
+    "street": "Peperstraat 2",
+    "city": "8560 Gullegem",
+    "lat": 50.8437042,
+    "lng": 3.2050393
+  },
+  "Harelbeke, De Dageraad": {
+    "street": "Stasegemsesteenweg 21",
+    "city": "8530 Harelbeke",
+    "lat": 50.846653,
+    "lng": 3.311564
+  },
+  "Ieper, Stedelijke Sporthalle": {
+    "street": "Leopold III Laan",
+    "city": "8900 Ieper",
+    "lat": 50.8466148,
+    "lng": 2.8935223
+  },
+  "Ingelmunster, Sporthal": {
+    "street": "Bollewerpstraat 92A",
+    "city": "8770 Ingelmunster",
+    "lat": 50.9222336,
+    "lng": 3.2620783
+  },
+  "Izegem, De Krekel": {
+    "street": "H.Hartstraat 15",
+    "city": "8870 Izegem",
+    "lat": 50.9175797,
+    "lng": 3.2076073
+  },
+  "Kortrijk, Sportcampus Lange Munte": {
+    "street": "Bad Godesberglaan 22",
+    "city": "8500 Kortrijk",
+    "lat": 50.8075447,
+    "lng": 3.3011749
+  },
+  "Kuurne, Sportpark": {
+    "street": "Boomgaardstraat 168",
+    "city": "8520 Kuurne",
+    "lat": 50.8524437,
+    "lng": 3.2713027
+  },
+  "Langemark, Sportcentrum": {
+    "street": "Boezingestraat 51A",
+    "city": "8920 Langemark",
+    "lat": 50.9102364,
+    "lng": 2.9170721
+  },
+  "Ledegem, Gemeentelijke sporthal": {
+    "street": "St Eloois-Winkelstraat 76",
+    "city": "8880 Ledegem",
+    "lat": 50.8578568,
+    "lng": 3.1293211
+  },
+  "Lendelede, Steuren Ambacht": {
+    "street": "Steuren Ambacht 2",
+    "city": "8860 Lendelede",
+    "lat": 50.88311,
+    "lng": 3.2319169
+  },
+  "Marke, Sporthal": {
+    "street": "Gymnasiastraat",
+    "city": "8510 Marke",
+    "lat": 50.7996483,
+    "lng": 3.2228482
+  },
+  "Markegem, Den Bul": {
+    "street": "Brouwerijstraat 21",
+    "city": "8720 Markegem",
+    "lat": 50.9453926,
+    "lng": 3.3971286
+  },
+  "Menen, De Steiger": {
+    "street": "Waalvest 1",
+    "city": "8930 Menen",
+    "lat": 50.7931747,
+    "lng": 3.1267371
+  },
+  "Moorsele, Sporthal Arena": {
+    "street": "Secr. Vanmarckelaan 121",
+    "city": "8560 Moorsele",
+    "lat": 50.8417969,
+    "lng": 3.1715934
+  },
+  "Moorslede, Gem. Sporthal Grimmertinge": {
+    "street": "Iepersestraat 52H",
+    "city": "8890 Moorslede",
+    "lat": 50.8893356,
+    "lng": 3.0532184
+  },
+  "Ooigem, Leieland": {
+    "street": "G. Gezellestraat 55A",
+    "city": "8710 Ooigem",
+    "lat": 50.8971252,
+    "lng": 3.3288541
+  },
+  "Oostende, Mr.V. Arena": {
+    "street": "Sportparklaan 1",
+    "city": "8400 Oostende",
+    "lat": 51.2033768,
+    "lng": 2.9241099
+  },
+  "Roeselare, Onze Kinderen": {
+    "street": "Blommestraat 14",
+    "city": "8800 Roeselare",
+    "note": "Parking aan het kruispunt Hoogstraat-Blommestraat bij de hockeyvelden",
+    "lat": 50.933197,
+    "lng": 3.1447179
+  },
+  "Ruiselede, De Ruysel": {
+    "street": "Tiletumstraat 46A",
+    "city": "8755 Ruiselede",
+    "lat": 51.035511,
+    "lng": 3.395395
+  },
+  "Sint Eloois Winkel, Gemeentelijke sporthal": {
+    "street": "Dorpsplein 17A",
+    "city": "8880 Sint Eloois Winkel",
+    "lat": 50.8762703,
+    "lng": 3.1770463
+  },
+  "Staden, De Wankaarde": {
+    "street": "Ooststraat 4",
+    "city": "8840 Staden",
+    "lat": 50.9749069,
+    "lng": 3.0208588
+  },
+  "Tielt, De Ponte": {
+    "street": "Sportlaan 1",
+    "city": "8700 Tielt",
+    "lat": 51.0035934,
+    "lng": 3.3292816
+  },
+  "Vlamertinge, Sporthal": {
+    "street": "Poperingseweg 479",
+    "city": "8908 Vlamertinge",
+    "lat": 50.8537712,
+    "lng": 2.8164673
+  },
+  "Waregem, De Treffer": {
+    "street": "Meersstraat 5",
+    "city": "8790 Waregem",
+    "lat": 50.8847961,
+    "lng": 3.429877
+  },
+  "Warneton, Salle des sports de Warneton": {
+    "street": "Faubourg de Lille 45",
+    "city": "7784 Warneton",
+    "lat": 50.7504082,
+    "lng": 2.9432344
+  },
+  "Wevelgem, De Vlasschaard": {
+    "street": "Menenstraat 122",
+    "city": "8560 Wevelgem",
+    "lat": 50.8062744,
+    "lng": 3.170886
+  },
+  "Wielsbeke, Sportcentrum Hernieuwenburg": {
+    "street": "Hernieuwenstraat 14C",
+    "city": "8710 Wielsbeke",
+    "lat": 50.9124146,
+    "lng": 3.3728912
+  },
+  "Wijtschate, De Croonaert": {
+    "street": "Vierstraat 31",
+    "city": "8953 Wijtschate",
+    "lat": 50.7893562,
+    "lng": 2.8768468
+  },
+  "Zwevegem, Bekaertsportcentrum": {
+    "street": "Bekaertstraat 4",
+    "city": "8550 Zwevegem",
+    "lat": 50.8172493,
+    "lng": 3.3329935
+  },
+  "Zwevezele, Gemeentelijke Sporthal": {
+    "street": "Kasteelstraat 76",
+    "city": "8750 Zwevezele",
+    "lat": 51.0350418,
+    "lng": 3.204885
+  }
+}

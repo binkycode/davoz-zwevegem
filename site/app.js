@@ -18,6 +18,11 @@ const burger = (t) => `<svg class="burger" viewBox="0 0 24 24" role="img" aria-l
   + '<path d="M3 10a9 6 0 0 1 18 0z" fill="#E3A33B"/><circle cx="9" cy="7" r=".7" fill="#FFF3D6"/><circle cx="13" cy="6" r=".7" fill="#FFF3D6"/><circle cx="15.5" cy="8" r=".7" fill="#FFF3D6"/>'
   + '<path d="M2.5 11.5c1.5 1.2 2.5-.6 4 .4s2.5-.6 4 .4 2.5-.6 4 .4 2.5-.6 4 .4 2-.4 3-.4" fill="none" stroke="#4CAF50" stroke-width="1.6" stroke-linecap="round"/>'
   + '<rect x="3" y="13" width="18" height="3.2" rx="1.4" fill="#6B3A1E"/><path d="M3 17.6h18a2.6 2.6 0 0 1-2.6 2.6H5.6A2.6 2.6 0 0 1 3 17.6z" fill="#E3A33B"/></svg>';
+const fullAddress = (m) => m.address?.street ? `${m.address.street}, ${m.address.city}` : null;
+const PIN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>';
+const routeLink = (m) => m.address?.mapsUrl
+  ? `<a class="route" href="${esc(m.address.mapsUrl)}" target="_blank" rel="noopener">${PIN}Route in Google Maps<span class="sr-only"> (opent in een nieuw venster)</span></a>`
+  : '';
 const teamHref = (t) => `#/${encodeURIComponent(t.key)}`;
 const matchHref = (t, m) => `#/${encodeURIComponent(t.key)}/${encodeURIComponent(m.nr)}`;
 
@@ -55,7 +60,7 @@ const name = (m, side) => {
 
 function matchRow(t, m) {
   const sets = m.sets.map((s) => `<span class="chip${setWon(m, s) ? ' won' : ''}">${s[0]}–${s[1]}${bicky(t, m, s) ? burger(t) : ''}</span>`).join('');
-  let meta = m.result ? '' : `${m.time ? esc(m.time) + ' · ' : ''}${esc(m.hall ?? '')}`;
+  let meta = m.result ? '' : `${m.time ? esc(m.time) + ' · ' : ''}${esc(m.hall ?? '')}${fullAddress(m) ? ' · ' + esc(fullAddress(m)) : ''}`;
   if (!m.result && m.date < today) meta = 'Uitslag nog niet ingevoerd';
   if (m.postponed) meta = 'Uitgesteld';
   if (m.forfait) meta = `Forfait: ${esc(m.forfait)}`;
@@ -156,7 +161,9 @@ function renderTeam(t) {
             <span class="tag">Volgende match</span>
             <div class="next-body">
               <strong>${esc(next.home)} – ${esc(next.away)}</strong>
-              <span class="muted">${esc(dateLong(next.date))}${next.time ? ' · ' + esc(next.time) : ''}${next.hall ? ' · ' + esc(next.hall) : ''}</span>
+              <span class="muted">${esc(dateLong(next.date))}${next.time ? ' · ' + esc(next.time) : ''}</span>
+              ${next.hall ? `<span class="muted">${esc(next.hall)}${fullAddress(next) ? ' · ' + esc(fullAddress(next)) : ''}</span>` : ''}
+              ${routeLink(next)}
             </div>
           </section>` : ''}
         <section aria-label="Wedstrijden">
@@ -219,7 +226,10 @@ function renderMatch(t, m) {
           <dl class="info">
             <dt>Datum</dt><dd>${esc(dateLong(m.date))}</dd>
             ${m.time ? `<dt>Aanvang</dt><dd>${esc(m.time)}</dd>` : ''}
-            ${m.hall ? `<dt>Sporthal</dt><dd>${esc(m.hall)}</dd>` : ''}
+            ${m.hall ? `<dt>Sporthal</dt><dd class="hall">${esc(m.hall)}
+              ${fullAddress(m) ? `<span>${esc(m.address.street)}<br>${esc(m.address.city)}</span>` : ''}
+              ${m.address?.note ? `<span class="muted">${esc(m.address.note)}</span>` : ''}
+              ${routeLink(m)}</dd>` : ''}
             <dt>Reeks</dt><dd>${esc(t.division)}</dd>
             <dt>Wedstrijdnr.</dt><dd>${esc(m.nr)}</dd>
             ${m.forfait ? `<dt>Forfait</dt><dd>${esc(m.forfait)}</dd>` : ''}

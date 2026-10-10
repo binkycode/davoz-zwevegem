@@ -149,6 +149,11 @@ td.pts { font-weight: 700; }
 dl.info { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; font-size: 15px; }
 dl.info dt { color: var(--muted); }
 dl.info dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.route { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-weight: 600; text-underline-offset: 4px; }
+.route svg { width: 18px; height: 18px; fill: none; stroke: var(--accent); stroke-width: 2; }
+dl.info dd.hall { display: flex; flex-direction: column; gap: 2px; }
+dl.info dd.hall span { font-weight: 400; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .result-tag { align-self: flex-start; background: var(--accent); color: #0B1B2E; font-weight: 700; font-size: 13px; padding: 3px 10px; border-radius: 6px; text-transform: uppercase; letter-spacing: .08em; }
 
 .site-footer { border-top: 1px solid var(--line); background: var(--card); color: var(--muted); font-size: 14px; }

@@ -9,6 +9,20 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const outFile = resolve(root, process.argv[2] ?? 'site/data.json');
 const config = JSON.parse(await readFile(resolve(root, 'config.json'), 'utf8'));
+// Street addresses per hall, maintained with scripts/fetch-halls.mjs (the feed only has "Town, Hall").
+const halls = JSON.parse(await readFile(resolve(root, 'halls.json'), 'utf8').catch(() => '{}'));
+
+function hallAddress(name) {
+  if (!name) return null;
+  const h = halls[name.replace(/\s+/g, ' ').trim()];
+  const query = h ? `${h.street}, ${h.city}, België` : `${name}, België`;
+  return {
+    street: h?.street ?? null,
+    city: h?.city ?? null,
+    note: h?.note ?? null,
+    mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+  };
+}
 
 const BASE = 'https://www.volleyadmin2.be/services';
 
@@ -78,6 +92,7 @@ for (const m of rawMatches) {
     home: m.thuisploeg, away: m.bezoekersploeg,
     usHome,
     hall: m.sporthal || null,
+    address: hallAddress(m.sporthal),
     result: result ? { home: result[0], away: result[1] } : null,
     sets: [1, 2, 3, 4, 5].map((i) => pair(m[`uitslag_set_${i}`])).filter(Boolean),
     forfait: m.ForfaitHoofd || null,

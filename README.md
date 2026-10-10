@@ -31,6 +31,21 @@ Then open http://localhost:8765.
 2. In the repository: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 3. The workflow runs on every push and every hour; trigger it manually via **Actions → Publish site → Run workflow**.
 
+## Sports hall addresses
+
+The feed only names halls as "Town, Hall". `halls.json` holds the street address and
+coordinates per hall; the build adds them to each match together with a Google Maps link.
+A hall that is missing from `halls.json` still gets a Maps link based on its name.
+
+`halls.json` is filled once from the hall pages on volleyscores.be. When new halls appear
+(e.g. at the start of a season), run this locally and commit the updated `halls.json`:
+
+```bash
+node scripts/fetch-data.mjs && node scripts/fetch-halls.mjs
+```
+
+The script only looks up halls that are not in the file yet; fix an address by editing the file.
+
 ## Configuration
 
 `config.json` holds the club (name, stamnummer, province) and a friendly label per series
