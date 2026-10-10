@@ -12,6 +12,12 @@ const dateLong = (iso) => fmt(iso, { weekday: 'long', day: 'numeric', month: 'lo
 
 const won = (m) => m.result && (m.usHome ? m.result.home > m.result.away : m.result.away > m.result.home);
 const setWon = (m, [h, a]) => (m.usHome ? h > a : a > h);
+// A set won while the opponent stayed under the team's `bickyBelow` points earns a Bicky burger.
+const bicky = (t, m, [h, a]) => t.bickyBelow != null && setWon(m, [h, a]) && (m.usHome ? a : h) < t.bickyBelow;
+const burger = (t) => `<svg class="burger" viewBox="0 0 24 24" role="img" aria-label="Bicky burger: tegenstander scoorde minder dan ${t.bickyBelow} punten"><title>Bicky burger! Tegenstander scoorde minder dan ${t.bickyBelow} punten</title>`
+  + '<path d="M3 10a9 6 0 0 1 18 0z" fill="#E3A33B"/><circle cx="9" cy="7" r=".7" fill="#FFF3D6"/><circle cx="13" cy="6" r=".7" fill="#FFF3D6"/><circle cx="15.5" cy="8" r=".7" fill="#FFF3D6"/>'
+  + '<path d="M2.5 11.5c1.5 1.2 2.5-.6 4 .4s2.5-.6 4 .4 2.5-.6 4 .4 2.5-.6 4 .4 2-.4 3-.4" fill="none" stroke="#4CAF50" stroke-width="1.6" stroke-linecap="round"/>'
+  + '<rect x="3" y="13" width="18" height="3.2" rx="1.4" fill="#6B3A1E"/><path d="M3 17.6h18a2.6 2.6 0 0 1-2.6 2.6H5.6A2.6 2.6 0 0 1 3 17.6z" fill="#E3A33B"/></svg>';
 const teamHref = (t) => `#/${encodeURIComponent(t.key)}`;
 const matchHref = (t, m) => `#/${encodeURIComponent(t.key)}/${encodeURIComponent(m.nr)}`;
 
@@ -43,7 +49,7 @@ const name = (m, side) => {
 };
 
 function matchRow(t, m) {
-  const sets = m.sets.map((s) => `<span class="chip${setWon(m, s) ? ' won' : ''}">${s[0]}–${s[1]}</span>`).join('');
+  const sets = m.sets.map((s) => `<span class="chip${setWon(m, s) ? ' won' : ''}">${s[0]}–${s[1]}${bicky(t, m, s) ? burger(t) : ''}</span>`).join('');
   let meta = m.result ? '' : `${m.time ? esc(m.time) + ' · ' : ''}${esc(m.hall ?? '')}`;
   if (!m.result && m.date < today) meta = 'Uitslag nog niet ingevoerd';
   if (m.postponed) meta = 'Uitgesteld';
@@ -70,7 +76,7 @@ function scoreboard(t, m, { title, link }) {
         <div class="team away">${esc(m.away)}</div>
       </div>
       ${m.sets.length ? `<div class="set-chips">${m.sets.map((s, i) => `
-        <div class="set-chip${setWon(m, s) ? ' won' : ''}"><small>Set ${i + 1}</small><b>${s[0]}–${s[1]}</b><i></i></div>`).join('')}</div>` : ''}
+        <div class="set-chip${setWon(m, s) ? ' won' : ''}"><small>Set ${i + 1}</small><b>${s[0]}–${s[1]}${bicky(t, m, s) ? burger(t) : ''}</b><i></i></div>`).join('')}</div>` : ''}
       ${link ? `<a class="more" href="${matchHref(t, m)}">Bekijk matchdetail →</a>` : ''}
     </section>`;
 }
@@ -172,7 +178,7 @@ function renderMatch(t, m) {
             <h2 id="sets" class="section-title" style="margin-bottom:16px">Set per set</h2>
             <div class="set-bars">${m.sets.map(([h, a], i) => `
               <div>
-                <div class="set-bar-head"><span>Set ${i + 1}</span><b>${h}–${a}</b></div>
+                <div class="set-bar-head"><span>Set ${i + 1}</span><b>${h}–${a}${bicky(t, m, [h, a]) ? burger(t) : ''}</b></div>
                 <div class="set-bar" role="img" aria-label="Set ${i + 1}: ${h} tegen ${a}"><span class="${m.usHome ? 'us' : 'them'}" style="flex:${h}"></span><span class="${m.usHome ? 'them' : 'us'}" style="flex:${a}"></span></div>
               </div>`).join('')}
             </div>

@@ -66,6 +66,7 @@ for (const m of rawMatches) {
       teamName: usHome ? m.thuisploeg : m.bezoekersploeg,
       label: cfg.label ?? null, division: cfg.division ?? m.reeks,
       cup: !!cfg.cup || /^WB/.test(m.reeks), order: cfg.order ?? 99,
+      bickyBelow: cfg.bickyBelow ?? null,
       matches: [], ranking: []
     });
   }

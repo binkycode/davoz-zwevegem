@@ -109,6 +109,8 @@ a.match:hover { color: var(--ink); border-color: var(--muted); }
 .match-teams .meta { font-size: 14px; color: var(--muted); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { font-size: 14px; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--line); color: var(--muted); }
+.burger { width: 1.15em; height: 1.15em; margin-left: .3em; vertical-align: -.2em; flex: none; }
+.set-chip b, .set-bar-head b { display: inline-flex; align-items: center; }
 .chip.won { background: var(--us-row); border-color: var(--us-row); color: var(--ink); font-weight: 600; }
 .match-score { display: flex; align-items: center; gap: 12px; margin-left: auto; }
 .match-score b { font: 800 30px/1 var(--display); }
