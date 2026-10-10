@@ -101,6 +101,20 @@ function statsCard(t, played) {
     </section>`;
 }
 
+function bickyCard(t, played) {
+  if (t.bickyBelow == null) return '';
+  const count = played.reduce((n, m) => n + m.sets.filter((s) => bicky(t, m, s)).length, 0);
+  return `
+    <section class="card bicky-card" aria-labelledby="bicky">
+      <div class="bicky-icon">${burger(t)}</div>
+      <div>
+        <h2 id="bicky" class="section-title">Bicky-sets</h2>
+        <span class="muted">Gewonnen sets waarin de tegenstander minder dan ${t.bickyBelow} punten scoorde</span>
+      </div>
+      <b class="bicky-count">${count}</b>
+    </section>`;
+}
+
 function rankingCard(t) {
   if (!t.ranking.length) return '';
   return `
@@ -153,6 +167,7 @@ function renderTeam(t) {
       </div>
       <aside class="col-side">
         ${statsCard(t, played)}
+        ${bickyCard(t, played)}
         ${rankingCard(t)}
       </aside>
     </div>`;
