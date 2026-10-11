@@ -113,6 +113,23 @@ function statsCard(t, played) {
     </section>`;
 }
 
+// Subscribe links: webcal:// for Apple and Outlook, Google via its "add by URL" page, or copy the https link.
+function calendarCard(path, title, intro) {
+  if (!path) return '';
+  const url = new URL(path, location.href.split('#')[0]).href;
+  const webcal = url.replace(/^https?:/, 'webcal:');
+  return `
+    <section class="card cal-card" aria-labelledby="agenda">
+      <h2 id="agenda" class="section-title">${esc(title)}</h2>
+      <span class="muted">${esc(intro)}</span>
+      <div class="cal-actions">
+        <a class="btn" href="${esc(webcal)}">Apple / Outlook</a>
+        <a class="btn" href="https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcal)}" target="_blank" rel="noopener">Google Agenda<span class="sr-only"> (opent in een nieuw venster)</span></a>
+        <button type="button" class="btn btn-ghost" data-copy="${esc(url)}">Kopieer link</button>
+      </div>
+    </section>`;
+}
+
 function bickyCard(t, played) {
   if (t.bickyBelow == null) return '';
   const count = played.reduce((n, m) => n + m.sets.filter((s) => bicky(t, m, s)).length, 0);
@@ -182,6 +199,7 @@ function renderTeam(t) {
         ${statsCard(t, played)}
         ${bickyCard(t, played)}
         ${rankingCard(t)}
+        ${calendarCard(t.calendar, 'In je agenda', `Alle matchen van ${t.label} in je gsm-agenda, met sporthal en adres. Verplaatste matchen passen zich vanzelf aan.`)}
       </aside>
     </div>`;
 }
@@ -394,6 +412,7 @@ function renderWeekend() {
           <p>${esc(summary)}</p>
         </section>
         ${homeCards(home, byTime)}${noHome}
+        ${calendarCard(state.data.calendar, 'Altijd op de hoogte', 'Alle matchen van de club in je gsm-agenda. Wil je alleen je eigen ploeg? Kies ze bovenaan.')}
       </aside>
     </div>`;
 }
@@ -410,6 +429,13 @@ document.addEventListener('click', (e) => {
   if (tab) { state.tab = tab.dataset.tab; render(); }
   const week = e.target.closest('[data-week]');
   if (week) { state.week = week.dataset.week; render(); }
+  const copy = e.target.closest('[data-copy]');
+  if (copy) {
+    navigator.clipboard.writeText(copy.dataset.copy).then(
+      () => { copy.textContent = 'Gekopieerd'; setTimeout(() => { copy.textContent = 'Kopieer link'; }, 2000); },
+      () => { window.prompt('Kopieer deze link:', copy.dataset.copy); }
+    );
+  }
 });
 window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
 

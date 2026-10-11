@@ -5,6 +5,7 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildCalendar, calendarSlug } from './ical.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const outFile = resolve(root, process.argv[2] ?? 'site/data.json');
@@ -20,6 +21,8 @@ function hallAddress(name) {
     street: h?.street ?? null,
     city: h?.city ?? null,
     note: h?.note ?? null,
+    lat: h?.lat ?? null,
+    lng: h?.lng ?? null,
     mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
   };
 }
@@ -130,14 +133,30 @@ for (const reeks of new Set([...teams.values()].map((t) => t.reeks))) {
 }
 
 const sorted = [...teams.values()].sort((a, b) => (a.cup - b.cup) || (a.order - b.order) || a.label.localeCompare(b.label));
+const generatedAt = new Date().toISOString();
+for (const t of sorted) t.calendar = `agenda/${calendarSlug(t.key)}.ics`;
 const data = {
   club: config.clubName,
   stamnummer: config.stamnummer,
-  generatedAt: new Date().toISOString(),
+  generatedAt,
   source: 'VolleyAdmin2 — Volley Vlaanderen',
+  calendar: 'agenda/davoz-zwevegem.ics',
   teams: sorted
 };
 
 await mkdir(dirname(outFile), { recursive: true });
 await writeFile(outFile, JSON.stringify(data));
-console.log(`Wrote ${outFile}: ${sorted.length} teams, ${rawMatches.length} matches.`);
+
+// Calendar subscriptions: one per team plus one for the whole club.
+const siteUrl = config.siteUrl ?? null;
+const calOptions = { generatedAt, siteUrl, domain: siteUrl ? new URL(siteUrl).host : 'davoz-zwevegem' };
+const outDir = dirname(outFile);
+await mkdir(resolve(outDir, 'agenda'), { recursive: true });
+for (const t of sorted) {
+  await writeFile(resolve(outDir, t.calendar), buildCalendar(`${config.clubName} — ${t.label}`, t.matches.map((match) => ({ team: t, match })), calOptions));
+}
+const all = sorted.flatMap((t) => t.matches.map((match) => ({ team: t, match })))
+  .sort((a, b) => (a.match.date + (a.match.time ?? '')).localeCompare(b.match.date + (b.match.time ?? '')));
+await writeFile(resolve(outDir, data.calendar), buildCalendar(config.clubName, all, calOptions));
+
+console.log(`Wrote ${outFile}: ${sorted.length} teams, ${rawMatches.length} matches, ${sorted.length + 1} calendars.`);

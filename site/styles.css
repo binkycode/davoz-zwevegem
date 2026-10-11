@@ -205,6 +205,15 @@ dl.info dd.hall span { font-weight: 400; }
 .wk-home-slots b { font: 700 18px var(--display); white-space: nowrap; }
 .wk-home-slots span { text-align: right; }
 
+/* Calendar subscription */
+.cal-card { display: flex; flex-direction: column; gap: 8px; }
+.cal-card .muted { font-size: 15px; }
+.cal-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.btn { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 10px; border: 2px solid var(--ink); background: var(--ink); color: var(--card); font-weight: 700; font-size: 15px; text-decoration: none; cursor: pointer; }
+.btn:hover { color: var(--card); background: var(--muted); border-color: var(--muted); }
+.btn-ghost { background: none; color: var(--ink); }
+.btn-ghost:hover { color: var(--ink); background: var(--us-row); border-color: var(--ink); }
+
 .site-footer { border-top: 1px solid var(--line); background: var(--card); color: var(--muted); font-size: 14px; }
 .site-footer .wrap { padding-top: 20px; padding-bottom: 20px; }
 

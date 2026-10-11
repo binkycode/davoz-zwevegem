@@ -2,6 +2,7 @@
   "clubName": "Davoz Zwevegem",
   "stamnummer": "W-0830",
   "provinceId": 9,
+  "siteUrl": "https://binkycode.github.io/davoz-zwevegem/",
   "teams": {
     "WP3DA": { "label": "Dames A", "division": "Promo 3 Dames", "order": 1 },
     "WP4DC": { "label": "Dames B", "division": "Promo 4 Dames", "order": 2 },

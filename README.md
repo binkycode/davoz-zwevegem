@@ -31,6 +31,15 @@ Then open http://localhost:8765.
 2. In the repository: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 3. The workflow runs on every push and every hour; trigger it manually via **Actions → Publish site → Run workflow**.
 
+## Calendar subscriptions
+
+Every build also writes iCalendar feeds to `site/agenda/`: one per team
+(`agenda/<series>-<team id>.ics`) and one for the whole club (`agenda/davoz-zwevegem.ics`).
+Team pages and the weekend page offer subscribe links (webcal for Apple/Outlook, Google
+Calendar, or copy the URL). Events keep a stable UID, so moved matches update in place;
+upcoming matches carry a reminder one hour before the start. `siteUrl` in `config.json`
+is used for the links back to the site inside each event.
+
 ## Sports hall addresses
 
 The feed only names halls as "Town, Hall". `halls.json` holds the street address and
