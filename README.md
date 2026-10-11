@@ -46,6 +46,15 @@ favicon and the header in `site/index.html`; `node scripts/make-icons.mjs` draws
 from the same geometry (no dependencies). Rerun both only when the artwork changes and commit
 the results.
 
+## Analytics
+
+Anonymous visitor statistics via [GoatCounter](https://davoz-zwevegem.goatcounter.com)
+(no cookies, no personal data). Automatic counting is off (`no_onload`); `app.js` counts each
+`#/…` view as its own page (`/`, `/weetjes`, `/ploeg/<team>`, `/ploeg/<team>/match/<nr>`) and
+records events for clicks with a `data-track` attribute (calendar buttons, Maps routes), for
+"Installeer app", installations and launches from the home screen. GoatCounter ignores
+localhost, so local testing is not counted.
+
 ## Calendar subscriptions
 
 Every build also writes iCalendar feeds to `site/agenda/`: one per team

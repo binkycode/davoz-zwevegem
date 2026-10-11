@@ -21,7 +21,7 @@ const burger = (t) => `<svg class="burger" viewBox="0 0 24 24" role="img" aria-l
 const fullAddress = (m) => m.address?.street ? `${m.address.street}, ${m.address.city}` : null;
 const PIN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>';
 const routeLink = (m) => m.address?.mapsUrl
-  ? `<a class="route" href="${esc(m.address.mapsUrl)}" target="_blank" rel="noopener">${PIN}Route in Google Maps<span class="sr-only"> (opent in een nieuw venster)</span></a>`
+  ? `<a class="route" href="${esc(m.address.mapsUrl)}" target="_blank" rel="noopener" data-track="route" data-track-title="Route: ${esc(m.hall)}">${PIN}Route in Google Maps<span class="sr-only"> (opent in een nieuw venster)</span></a>`
   : '';
 const teamHref = (t) => `#/${encodeURIComponent(t.key)}`;
 const matchHref = (t, m) => `#/${encodeURIComponent(t.key)}/${encodeURIComponent(m.nr)}`;
@@ -116,7 +116,7 @@ function statsCard(t, played) {
 }
 
 // Subscribe links: webcal:// for Apple and Outlook, Google via its "add by URL" page, or copy the https link.
-function calendarCard(path, title, intro) {
+function calendarCard(path, title, intro, trackName, trackLabel) {
   if (!path) return '';
   const url = new URL(path, location.href.split('#')[0]).href;
   const webcal = url.replace(/^https?:/, 'webcal:');
@@ -125,9 +125,9 @@ function calendarCard(path, title, intro) {
       <h2 id="agenda" class="section-title">${esc(title)}</h2>
       <span class="muted">${esc(intro)}</span>
       <div class="cal-actions">
-        <a class="btn" href="${esc(webcal)}">Apple / Outlook</a>
-        <a class="btn" href="https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcal)}" target="_blank" rel="noopener">Google Agenda<span class="sr-only"> (opent in een nieuw venster)</span></a>
-        <button type="button" class="btn btn-ghost" data-copy="${esc(url)}">Kopieer link</button>
+        <a class="btn" href="${esc(webcal)}" data-track="agenda-apple-${trackName}" data-track-title="Agenda Apple/Outlook: ${esc(trackLabel)}">Apple / Outlook</a>
+        <a class="btn" href="https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcal)}" target="_blank" rel="noopener" data-track="agenda-google-${trackName}" data-track-title="Agenda Google: ${esc(trackLabel)}">Google Agenda<span class="sr-only"> (opent in een nieuw venster)</span></a>
+        <button type="button" class="btn btn-ghost" data-copy="${esc(url)}" data-track="agenda-kopieer-${trackName}" data-track-title="Agenda link gekopieerd: ${esc(trackLabel)}">Kopieer link</button>
       </div>
     </section>`;
 }
@@ -201,7 +201,7 @@ function renderTeam(t) {
         ${statsCard(t, played)}
         ${bickyCard(t, played)}
         ${rankingCard(t)}
-        ${calendarCard(t.calendar, 'In je agenda', `Alle matchen van ${t.label} in je gsm-agenda, met sporthal en adres. Verplaatste matchen passen zich vanzelf aan.`)}
+        ${calendarCard(t.calendar, 'In je agenda', `Alle matchen van ${t.label} in je gsm-agenda, met sporthal en adres. Verplaatste matchen passen zich vanzelf aan.`, slug(t.label), t.label)}
       </aside>
     </div>`;
 }
@@ -446,7 +446,7 @@ function renderWeekend() {
           <p>${esc(summary)}</p>
         </section>
         ${homeCards(home, byTime)}${noHome}
-        ${calendarCard(state.data.calendar, 'Altijd op de hoogte', 'Alle matchen van de club in je gsm-agenda. Wil je alleen je eigen ploeg? Kies ze bovenaan.')}
+        ${calendarCard(state.data.calendar, 'Altijd op de hoogte', 'Alle matchen van de club in je gsm-agenda. Wil je alleen je eigen ploeg? Kies ze bovenaan.', 'club', 'hele club')}
       </aside>
     </div>`;
 }
@@ -636,20 +636,41 @@ function renderWeetjes() {
     </div>`;
 }
 
+// ---- Analytics (GoatCounter: anonymous, no cookies) -------------------------------------
+
+const slug = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+// count.js loads async; anything counted before it is ready waits in this queue.
+const gcQueue = [];
+const gc = (vars) => (window.goatcounter?.count ? window.goatcounter.count(vars) : gcQueue.push(vars));
+document.getElementById('goatcounter')?.addEventListener('load', () => gcQueue.splice(0).forEach(gc));
+const trackEvent = (name, title) => gc({ path: name, title: title ?? name, event: true });
+
+// The site navigates with '#/…' links, so every view is counted as its own page.
+let lastTracked = null;
+function trackPage(page, team, match) {
+  const path = page === 'weetjes' ? '/weetjes' : !team ? '/' : `/ploeg/${slug(team.label)}${match ? `/match/${slug(match.nr)}` : ''}`;
+  if (path === lastTracked) return;
+  lastTracked = path;
+  gc({ path, title: document.title });
+}
+
 function render() {
   const { page, team, match } = route();
   if (team?.key !== state.teamKey) { state.teamKey = team?.key; state.tab = null; }
   renderNav(team, page);
   document.getElementById('app').innerHTML = page === 'weetjes' ? renderWeetjes() : !team ? renderWeekend() : match ? renderMatch(team, match) : renderTeam(team);
+  trackPage(page, team, match);
 }
 
 document.addEventListener('click', (e) => {
   const tab = e.target.closest('[data-tab]');
   if (tab) { state.tab = tab.dataset.tab; render(); }
   const week = e.target.closest('[data-week]');
-  if (week) { state.week = week.dataset.week; render(); }
+  if (week) { state.week = week.dataset.week; render(); if (week.dataset.week === 'volgend') trackEvent('weekend-volgend', 'Volgend weekend bekeken'); }
   const mode = e.target.closest('[data-ft-mode]');
-  if (mode) { state.weetjesMode = mode.dataset.ftMode; render(); }
+  if (mode) { state.weetjesMode = mode.dataset.ftMode; render(); if (mode.dataset.ftMode === 'team') trackEvent('weetjes-per-ploeg', 'Weetjes per ploeg bekeken'); }
+  const tracked = e.target.closest('[data-track]');
+  if (tracked) trackEvent(tracked.dataset.track, tracked.dataset.trackTitle);
   const copy = e.target.closest('[data-copy]');
   if (copy) {
     navigator.clipboard.writeText(copy.dataset.copy).then(
@@ -684,12 +705,15 @@ window.addEventListener('beforeinstallprompt', (e) => {
 });
 installButton?.addEventListener('click', async () => {
   if (!installPrompt) return;
+  trackEvent('app-installeer-klik', 'Klik op Installeer app');
   installPrompt.prompt();
   await installPrompt.userChoice;
   installPrompt = null;
   installButton.hidden = true;
 });
-window.addEventListener('appinstalled', () => { if (installButton) installButton.hidden = true; });
+window.addEventListener('appinstalled', () => { if (installButton) installButton.hidden = true; trackEvent('app-geinstalleerd', 'App geïnstalleerd'); });
+// Opened from the home screen (installed app) rather than in the browser.
+if (window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone) trackEvent('app-geopend', 'App geopend vanaf startscherm');
 
 fetch('data.json', { cache: 'no-cache' })
   .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
