@@ -204,6 +204,37 @@ function renderTeam(t) {
     </div>`;
 }
 
+// All meetings with this opponent in the same series: normally a first and a return leg,
+// youth series sometimes play each other more often.
+function meetingsCard(t, m) {
+  if (!m.opponentId) return '';
+  const all = t.matches.filter((x) => x.opponentId === m.opponentId);
+  if (all.length < 2) return '';
+  const label = (i) => all.length === 2 ? ['Heenmatch', 'Terugmatch'][i] : `${i + 1}e duel`;
+  const rows = all.map((x, i) => {
+    const current = x.nr === m.nr;
+    const right = x.result
+      ? `<b class="h2h-score">${x.result.home}–${x.result.away}</b>${badge(x)}`
+      : `<span class="muted">${x.date < today ? 'Uitslag volgt' : 'Nog te spelen'}</span>`;
+    const sets = x.sets.length ? `<span class="muted h2h-sets">${x.sets.map(([h, a]) => `${h}–${a}`).join(' · ')}</span>` : '';
+    const body = `
+      <div class="h2h-when">
+        <span class="h2h-label">${label(i)}${current ? ' <span class="h2h-now">Deze match</span>' : ''}</span>
+        <span class="muted">${esc(capital(dayShort(x.date)))} ${esc(dayMonth(x.date))} · <span class="venue${x.usHome ? ' home' : ''}">${x.usHome ? 'Thuis' : 'Uit'}</span></span>
+      </div>
+      <div class="h2h-teams">${name(x, 'home')}${name(x, 'away')}${sets}</div>
+      <div class="h2h-right">${right}</div>`;
+    return current
+      ? `<div class="h2h-row is-current" aria-current="true">${body}</div>`
+      : `<a class="h2h-row" href="${matchHref(t, x)}">${body}</a>`;
+  }).join('');
+  return `
+    <section class="card" aria-labelledby="h2h">
+      <h2 id="h2h" class="section-title" style="margin-bottom:12px">${all.length === 2 ? 'Heen- en terugmatch' : 'Onderlinge duels'}</h2>
+      <div class="h2h-list">${rows}</div>
+    </section>`;
+}
+
 function renderMatch(t, m) {
   const total = m.sets.reduce((acc, [h, a]) => [acc[0] + h, acc[1] + a], [0, 0]);
   const header = m.result
@@ -239,6 +270,7 @@ function renderMatch(t, m) {
               </table>
             </div>
           </section>` : ''}
+        ${meetingsCard(t, m)}
       </div>
       <aside class="col-side">
         <section class="card" aria-labelledby="info">

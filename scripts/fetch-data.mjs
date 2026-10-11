@@ -94,6 +94,7 @@ for (const m of rawMatches) {
     time: m.aanvangsuur || null,
     home: m.thuisploeg, away: m.bezoekersploeg,
     usHome,
+    opponentId: usHome ? m.bezoekersploeg_id : m.thuisploeg_id,
     hall: m.sporthal || null,
     address: hallAddress(m.sporthal),
     result: result ? { home: result[0], away: result[1] } : null,
