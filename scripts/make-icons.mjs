@@ -6,33 +6,25 @@ import { writeFile, mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { deflateSync } from 'node:zlib';
+import { ballArcs } from './ball.mjs';
 
 const outDir = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'site', 'icons');
 const NAVY = [0x0B, 0x1B, 0x2E];
 const ORANGE = [0xFF, 0x7A, 0x1A];
 
-// Ball artwork in the favicon's 40×40 coordinate system.
+// Ball artwork in the favicon's 40×40 coordinate system (see ball.mjs).
 const CIRCLE = { cx: 20, cy: 20, r: 17 };
-const CURVES = [
-  [[20, 3], [18, 11], [20, 19], [28, 25]],
-  [[5, 26], [13, 23], [21, 24], [27, 32]],
-  [[33, 9], [26, 11], [21, 16], [20, 23]]
-];
+const ARCS = ballArcs();
 const STROKE = 2.6;
 
-const bezier = ([p0, p1, p2, p3], t) => {
-  const u = 1 - t;
-  return [0, 1].map((i) => u * u * u * p0[i] + 3 * u * u * t * p1[i] + 3 * u * t * t * p2[i] + t * t * t * p3[i]);
-};
-const SEGMENTS = CURVES.flatMap((c) => {
-  const pts = Array.from({ length: 49 }, (_, i) => bezier(c, i / 48));
-  return pts.slice(1).map((p, i) => [pts[i], p]);
-});
-
-function segDist([x, y], [[ax, ay], [bx, by]]) {
-  const dx = bx - ax, dy = by - ay;
-  const t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy)));
-  return Math.hypot(x - (ax + t * dx), y - (ay + t * dy));
+// Distance to a circular arc: radial distance where the point's angle falls on the arc,
+// otherwise the distance to the nearer end point (round line caps).
+function arcDist([x, y], { S, r, t0, span }) {
+  let t = Math.atan2(y - S[1], x - S[0]);
+  while (t < t0) t += 2 * Math.PI;
+  if (t <= t0 + span) return Math.abs(Math.hypot(x - S[0], y - S[1]) - r);
+  const end = (a) => Math.hypot(x - (S[0] + r * Math.cos(a)), y - (S[1] + r * Math.sin(a)));
+  return Math.min(end(t0), end(t0 + span));
 }
 
 // `ballSize`: share of the icon width the ball covers (smaller for maskable icons' safe zone).
@@ -44,7 +36,7 @@ function draw(size, ballSize) {
     for (let x = 0; x < size; x++) {
       const p = [(x + 0.5 - offset) / scale, (y + 0.5 - offset) / scale];
       let d = Math.abs(Math.hypot(p[0] - CIRCLE.cx, p[1] - CIRCLE.cy) - CIRCLE.r);
-      for (const s of SEGMENTS) d = Math.min(d, segDist(p, s));
+      for (const a of ARCS) d = Math.min(d, arcDist(p, a));
       // Anti-aliased edge: coverage over one device pixel.
       const cover = Math.max(0, Math.min(1, (STROKE / 2 - d) * scale + 0.5));
       const i = (y * size + x) * 4;

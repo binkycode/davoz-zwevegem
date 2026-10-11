@@ -40,8 +40,11 @@ loaded `data.json`, so the results stay visible offline. It fetches from the net
 so online visitors always get fresh data. Bump `CACHE` in `sw.js` when the list of cached
 files changes.
 
-The icons are drawn by `node scripts/make-icons.mjs` (no dependencies); rerun it only when
-the artwork changes and commit the PNGs.
+The volleyball mark is defined once in `scripts/ball.mjs` (three panels turning around the
+centre, built from circular arcs). `node scripts/ball.mjs` prints the SVG path used for the
+favicon and the header in `site/index.html`; `node scripts/make-icons.mjs` draws the PNG icons
+from the same geometry (no dependencies). Rerun both only when the artwork changes and commit
+the results.
 
 ## Calendar subscriptions
 
