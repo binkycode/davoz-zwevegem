@@ -10,6 +10,12 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="styles.css">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40' fill='none' stroke='%23FF7A1A' stroke-width='3'%3E%3Ccircle cx='20' cy='20' r='17'/%3E%3Cpath d='M20 3c-2 8 0 16 8 22M5 26c8-3 16-2 22 6M33 9c-7 2-12 7-13 14'/%3E%3C/svg%3E">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0B1B2E">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Davoz">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -19,10 +25,16 @@
         <svg class="ball" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17"/><path d="M20 3c-2 8 0 16 8 22"/><path d="M5 26c8-3 16-2 22 6"/><path d="M33 9c-7 2-12 7-13 14"/></svg>
         <span>Davoz Zwevegem</span>
       </a>
-      <span class="updated" id="updated"></span>
+      <div class="header-tools">
+        <button type="button" class="install" id="install" hidden>Installeer app</button>
+        <span class="updated" id="updated"></span>
+      </div>
     </div>
     <nav class="wrap team-nav" aria-label="Kies een ploeg" id="team-nav"></nav>
   </header>
+  <div class="offline" id="offline" role="status" hidden>
+    <div class="wrap">Je bent offline. Je ziet de uitslagen van de laatste keer dat de site geladen werd.</div>
+  </div>
 
   <main class="wrap" id="app" aria-live="polite">
     <p class="loading">Uitslagen laden…</p>

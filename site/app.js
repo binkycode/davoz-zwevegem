@@ -471,6 +471,34 @@ document.addEventListener('click', (e) => {
 });
 window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
 
+// ---- Installable app and offline use ------------------------------------------------------
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+
+// Optional chaining: an older cached index.html may lack these elements; the results must still load.
+const offlineBar = document.getElementById('offline');
+const installButton = document.getElementById('install');
+const showOnline = () => { if (offlineBar) offlineBar.hidden = navigator.onLine; };
+window.addEventListener('online', showOnline);
+window.addEventListener('offline', showOnline);
+showOnline();
+
+// Android/desktop Chrome offer installation through this event; iOS uses Share → Add to Home Screen.
+let installPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  installPrompt = e;
+  if (installButton) installButton.hidden = false;
+});
+installButton?.addEventListener('click', async () => {
+  if (!installPrompt) return;
+  installPrompt.prompt();
+  await installPrompt.userChoice;
+  installPrompt = null;
+  installButton.hidden = true;
+});
+window.addEventListener('appinstalled', () => { if (installButton) installButton.hidden = true; });
+
 fetch('data.json', { cache: 'no-cache' })
   .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
   .then((data) => {

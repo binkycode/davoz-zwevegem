@@ -31,6 +31,18 @@ Then open http://localhost:8765.
 2. In the repository: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 3. The workflow runs on every push and every hour; trigger it manually via **Actions → Publish site → Run workflow**.
 
+## Installable app and offline use
+
+The site is a Progressive Web App: `site/manifest.webmanifest` plus the icons in
+`site/icons/` let phones add it to the home screen (Android/Chrome shows an "Installeer app"
+button; on iPhone use Share → Add to Home Screen). `site/sw.js` caches the pages and the last
+loaded `data.json`, so the results stay visible offline. It fetches from the network first,
+so online visitors always get fresh data. Bump `CACHE` in `sw.js` when the list of cached
+files changes.
+
+The icons are drawn by `node scripts/make-icons.mjs` (no dependencies); rerun it only when
+the artwork changes and commit the PNGs.
+
 ## Calendar subscriptions
 
 Every build also writes iCalendar feeds to `site/agenda/`: one per team
