@@ -156,6 +156,55 @@ dl.info dd.hall span { font-weight: 400; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .result-tag { align-self: flex-start; background: var(--accent); color: #0B1B2E; font-weight: 700; font-size: 13px; padding: 3px 10px; border-radius: 6px; text-transform: uppercase; letter-spacing: .08em; }
 
+/* Weekend overview */
+.pill-weekend { border-color: var(--accent); }
+.pill-weekend[aria-current="page"] { background: var(--accent); border-color: var(--accent); }
+.wk-intro { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+.wk-range { font: 700 16px var(--display); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.wk-title { font: 800 clamp(38px, 6vw, 56px)/1 var(--display); text-transform: uppercase; margin-top: 4px; }
+.seg { display: flex; gap: 4px; padding: 4px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+.seg button { min-height: 44px; padding: 0 16px; border: 0; border-radius: 9px; background: none; color: var(--ink); font-weight: 600; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--card); font-weight: 700; }
+@media (max-width: 520px) { .seg { width: 100%; } .seg button { flex: 1; } }
+.wk-days { gap: 28px; }
+.wk-day { display: flex; flex-direction: column; gap: 14px; }
+.wk-day-title { font: 800 28px/1.1 var(--display); text-transform: uppercase; display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; }
+.wk-day-title span { font: 500 15px var(--body); text-transform: none; color: var(--muted); }
+.wk-empty { margin: 0; padding: 14px 18px; border: 1px dashed var(--line); border-radius: 14px; color: var(--muted); }
+.wk-slot { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; }
+@media (min-width: 700px) { .wk-slot { grid-template-columns: 76px minmax(0, 1fr); gap: 16px; } }
+.wk-time { font: 800 26px/1 var(--display); padding-top: 14px; }
+.wk-slot-matches { display: flex; flex-direction: column; gap: 10px; border-left: 3px solid var(--line); padding-left: 12px; min-width: 0; }
+.wk-match { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.wk-body { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.wk-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.wk-team { font: 800 18px var(--display); text-transform: uppercase; text-decoration: none; }
+.wk-team:hover { text-decoration: underline; }
+.venue { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 1px 7px; border-radius: 6px; border: 1px solid var(--ink); }
+.venue.home { background: var(--ink); color: var(--card); }
+.wk-division { font-size: 14px; }
+.wk-teams { font-size: 16px; overflow-wrap: anywhere; }
+.wk-teams .us { font-weight: 700; }
+.wk-hall { display: flex; flex-wrap: wrap; align-items: center; gap: 0 12px; font-size: 14px; }
+.wk-hall .route { min-height: 36px; }
+.wk-right { margin-left: auto; }
+.wk-score { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--ink); min-height: 44px; }
+.wk-score b { font: 800 30px/1 var(--display); }
+.wk-pending { font-size: 14px; color: var(--muted); border: 1px dashed var(--line); border-radius: 8px; padding: 6px 10px; white-space: nowrap; }
+.wk-stats { background: var(--navy); color: var(--on-navy); border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+.wk-stats h2 { font: 700 16px var(--display); letter-spacing: .12em; text-transform: uppercase; color: var(--on-navy-muted); }
+.wk-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); gap: 12px; }
+.wk-stat-grid b { display: block; font: 800 42px/1 var(--display); }
+.wk-stat-grid span { font-size: 14px; color: var(--on-navy-muted); }
+.wk-stats p { margin: 0; padding-top: 14px; border-top: 1px solid var(--navy-line); color: var(--on-navy-muted); font-size: 15px; }
+.wk-home { display: flex; flex-direction: column; gap: 8px; }
+.wk-home .tag { align-self: flex-start; }
+.wk-home-title { font: 800 26px/1.1 var(--display); }
+.wk-home-slots { display: flex; flex-direction: column; gap: 6px; padding: 10px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.wk-home-slots div { display: flex; justify-content: space-between; gap: 12px; font-size: 15px; }
+.wk-home-slots b { font: 700 18px var(--display); white-space: nowrap; }
+.wk-home-slots span { text-align: right; }
+
 .site-footer { border-top: 1px solid var(--line); background: var(--card); color: var(--muted); font-size: 14px; }
 .site-footer .wrap { padding-top: 20px; padding-bottom: 20px; }
 

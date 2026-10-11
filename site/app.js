@@ -1,6 +1,6 @@
 'use strict';
 
-const state = { data: null, tab: null };
+const state = { data: null, tab: null, week: 'dit' };
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Brussels' }).format(new Date());
@@ -26,20 +26,22 @@ const routeLink = (m) => m.address?.mapsUrl
 const teamHref = (t) => `#/${encodeURIComponent(t.key)}`;
 const matchHref = (t, m) => `#/${encodeURIComponent(t.key)}/${encodeURIComponent(m.nr)}`;
 
+// '#/' (or no hash) is the club weekend overview; '#/<team>' and '#/<team>/<match nr>' the team pages.
 function route() {
   const [, teamKey, matchNr] = location.hash.split('/').map(decodeURIComponent);
-  const teams = state.data.teams;
-  const team = teams.find((t) => t.key === teamKey) ?? teams.find((t) => !t.cup) ?? teams[0];
+  const team = teamKey ? state.data.teams.find((t) => t.key === teamKey) : null;
+  if (!team) return { team: null, match: null };
   const match = matchNr ? team.matches.find((m) => m.nr === matchNr) : null;
   return { team, match };
 }
 
 function renderNav(current) {
   const nav = document.getElementById('team-nav');
-  const pill = (t) => `<a class="pill" href="${teamHref(t)}"${t.key === current.key ? ' aria-current="page"' : ''}>${esc(t.label)}</a>`;
+  const pill = (t) => `<a class="pill" href="${teamHref(t)}"${t.key === current?.key ? ' aria-current="page"' : ''}>${esc(t.label)}</a>`;
   const league = state.data.teams.filter((t) => !t.cup);
   const cup = state.data.teams.filter((t) => t.cup);
-  nav.innerHTML = league.map(pill).join('') + (cup.length ? `<span class="pill-sep">Beker</span>${cup.map(pill).join('')}` : '');
+  nav.innerHTML = `<a class="pill pill-weekend" href="#/"${current ? '' : ' aria-current="page"'}>Dit weekend</a>`
+    + league.map(pill).join('') + (cup.length ? `<span class="pill-sep">Beker</span>${cup.map(pill).join('')}` : '');
   const active = nav.querySelector('[aria-current]');
   if (active) nav.scrollLeft = active.offsetLeft - (nav.clientWidth - active.offsetWidth) / 2;
 }
@@ -241,16 +243,173 @@ function renderMatch(t, m) {
     </div>`;
 }
 
+// ---- Club weekend overview -------------------------------------------------------------
+
+const addDays = (iso, n) => { const d = new Date(`${iso}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+const capital = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+const listNames = (xs) => xs.length > 1 ? `${xs.slice(0, -1).join(', ')} en ${xs.at(-1)}` : xs[0];
+const nowTime = () => new Intl.DateTimeFormat('nl-BE', { timeZone: 'Europe/Brussels', hour: '2-digit', minute: '2-digit' }).format(new Date());
+const dayTitle = (iso) => capital(fmt(iso, { weekday: 'long', day: 'numeric', month: 'long' }));
+
+// A weekend runs Friday to Sunday; from Monday on, "this weekend" is the coming one.
+function weekendDays(which) {
+  const dow = new Date(`${today}T12:00:00Z`).getUTCDay();
+  const friday = addDays(today, (dow === 0 ? -2 : 5 - dow) + (which === 'volgend' ? 7 : 0));
+  return [friday, addDays(friday, 1), addDays(friday, 2)];
+}
+
+function rangeLabel(from, to) {
+  const month = (iso) => fmt(iso, { month: 'long' });
+  const [a, b] = [asDate(from), asDate(to)];
+  const start = `${capital(dayShort(from))} ${a.getDate()}${month(from) !== month(to) ? ' ' + month(from) : ''}`;
+  return `${start} – ${dayShort(to)} ${b.getDate()} ${month(to)} ${b.getFullYear()}`;
+}
+
+// Rough end of the day's last match, for bar and welcome desk planning.
+const endEstimate = (time) => {
+  const [h, m] = time.split(':').map(Number);
+  const end = h * 60 + m + 150;
+  return `${String(Math.floor(end / 60) % 24).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`;
+};
+
+const started = (m) => m.date < today || (m.date === today && !!m.time && m.time <= nowTime());
+
+function weekendCard({ t, m }) {
+  const rank = t.ranking.find((r) => r.teamId === t.teamId)?.pos;
+  const sets = m.sets.map((s) => `<span class="chip${setWon(m, s) ? ' won' : ''}">${s[0]}–${s[1]}${bicky(t, m, s) ? burger(t) : ''}</span>`).join('');
+  let right = '';
+  if (m.result) right = `<a class="wk-score" href="${matchHref(t, m)}" aria-label="Matchdetail ${esc(m.home)} – ${esc(m.away)}"><b>${m.result.home}–${m.result.away}</b>${badge(m)}</a>`;
+  else if (m.postponed) right = '<span class="wk-pending">Uitgesteld</span>';
+  else if (started(m)) right = '<span class="wk-pending">Uitslag volgt</span>';
+  const hall = !m.result && !started(m) && m.hall
+    ? `<div class="wk-hall"><span class="muted">${esc(m.hall)}${m.address?.street ? ' · ' + esc(m.address.street) : ''}</span>${routeLink(m).replace('Route in Google Maps', 'Route')}</div>`
+    : '';
+  return `
+    <article class="wk-match">
+      <div class="wk-body">
+        <div class="wk-head">
+          <a class="wk-team" href="${teamHref(t)}">${esc(t.label)}</a>
+          <span class="venue${m.usHome ? ' home' : ''}">${m.usHome ? 'Thuis' : 'Uit'}</span>
+          <span class="muted wk-division">${esc(t.division)}${rank ? ` · ${rank}e` : ''}</span>
+        </div>
+        <div class="wk-teams">${name(m, 'home')} <span class="muted">–</span> ${name(m, 'away')}</div>
+        ${sets ? `<div class="chips">${sets}</div>` : ''}
+        ${hall}
+      </div>
+      ${right ? `<div class="wk-right">${right}</div>` : ''}
+    </article>`;
+}
+
+function homeCards(home, byTime) {
+  return [...new Set(home.map((x) => x.m.hall))].map((hall) => {
+    const list = home.filter((x) => x.m.hall === hall).sort((a, b) => a.m.date.localeCompare(b.m.date) || byTime(a, b));
+    const multiDay = new Set(list.map((x) => x.m.date)).size > 1;
+    const keys = [...new Set(list.map((x) => `${x.m.date}|${x.m.time ?? '–'}`))];
+    const slots = keys.map((k) => {
+      const [date, time] = k.split('|');
+      const teams = list.filter((x) => x.m.date === date && (x.m.time ?? '–') === time).map((x) => x.t.label).join(' · ');
+      return `<div><b>${esc(`${multiDay ? capital(dayShort(date)) + ' ' : ''}${time}`)}</b><span class="muted">${esc(teams)}</span></div>`;
+    }).join('');
+    const timed = list.filter((x) => x.m.time);
+    const span = timed.length && !multiDay ? ` van ${timed[0].m.time} tot ongeveer ${endEstimate(timed.at(-1).m.time)}` : '';
+    const [town, ...rest] = (hall ?? '').split(',');
+    const m = list[0].m;
+    return `
+      <section class="card wk-home" aria-label="Thuismatchen in ${esc(hall)}">
+        <span class="tag">Thuis in ${esc(town)}</span>
+        <h2 class="wk-home-title">${esc(rest.join(',').trim() || hall)}</h2>
+        ${fullAddress(m) ? `<span>${esc(fullAddress(m))}</span>` : ''}
+        ${m.address?.note ? `<span class="muted">${esc(m.address.note)}</span>` : ''}
+        <div class="wk-home-slots">${slots}</div>
+        <span class="muted">${plural(list.length, 'match', 'matchen')}${span}</span>
+        ${routeLink(m)}
+      </section>`;
+  }).join('');
+}
+
+function renderWeekend() {
+  const days = weekendDays(state.week);
+  const items = state.data.teams.flatMap((t) => t.matches.filter((m) => days.includes(m.date)).map((m) => ({ t, m })));
+  const byTime = (a, b) => (a.m.time ?? '').localeCompare(b.m.time ?? '') || a.t.order - b.t.order;
+  // Friday only shows up when somebody plays then.
+  const shownDays = days.filter((d, i) => i > 0 || items.some((x) => x.m.date === d));
+  const title = state.week === 'dit' ? 'Dit weekend' : 'Volgend weekend';
+  document.title = `${title} — Davoz Zwevegem`;
+
+  const dayBlocks = shownDays.map((d) => {
+    const list = items.filter((x) => x.m.date === d).sort(byTime);
+    const times = [...new Set(list.map((x) => x.m.time ?? '–'))];
+    return `
+      <section class="wk-day" aria-labelledby="dag-${d}">
+        <h2 class="wk-day-title" id="dag-${d}">${esc(dayTitle(d))}${list.length ? ` <span>${plural(list.length, 'wedstrijd', 'wedstrijden')}</span>` : ''}</h2>
+        ${list.length ? times.map((time) => `
+          <div class="wk-slot">
+            <div class="wk-time">${esc(time)}</div>
+            <div class="wk-slot-matches">${list.filter((x) => (x.m.time ?? '–') === time).map(weekendCard).join('')}</div>
+          </div>`).join('') : '<p class="wk-empty">Geen wedstrijden.</p>'}
+      </section>`;
+  }).join('');
+
+  // Results once the weekend is under way, otherwise the programme.
+  const home = items.filter((x) => x.m.usHome);
+  const count = (o) => items.filter((x) => outcome(x.m) === o).length;
+  const todo = items.filter((x) => !x.m.result && !x.m.postponed);
+  const stats = items.some((x) => x.m.result || started(x.m))
+    ? [['Gewonnen', count('W')], ...(count('G') ? [['Gelijk', count('G')]] : []), ['Verloren', count('V')],
+      ...(todo.length ? [[todo.some((x) => !started(x.m)) ? 'Nog te spelen' : 'Uitslag volgt', todo.length]] : [])]
+    : [['Matchen', items.length], ['Thuis', home.length], ['Uit', items.length - home.length]];
+
+  const leaders = [...new Set(items.filter((x) => x.t.ranking.find((r) => r.teamId === x.t.teamId)?.pos === 1).map((x) => x.t.label))];
+  const bickies = items.flatMap((x) => x.m.sets.filter((s) => bicky(x.t, x.m, s)).map(() => x.t.label));
+  const summary = items.length ? [
+    `${plural(items.length, 'match', 'matchen')}: ${!home.length ? 'allemaal op verplaatsing' : home.length === items.length ? 'allemaal thuis' : `${home.length} thuis en ${items.length - home.length} op verplaatsing`}.`,
+    leaders.length ? `${listNames(leaders)} ${leaders.length === 1 ? 'staat' : 'staan'} op kop.` : '',
+    bickies.length ? `${plural(bickies.length, 'Bicky-set', 'Bicky-sets')} voor ${listNames([...new Set(bickies)])}!` : ''
+  ].filter(Boolean).join(' ') : 'Geen wedstrijden dit weekend.';
+
+  const noHome = items.length && !home.length ? `
+    <section class="card wk-home" aria-labelledby="geen-thuis">
+      <h2 class="section-title" id="geen-thuis">Geen thuismatchen</h2>
+      <span class="muted">Alle ploegen spelen op verplaatsing. Supporters zijn overal welkom.</span>
+    </section>` : '';
+
+  return `
+    <section class="wk-intro">
+      <div>
+        <span class="wk-range">${esc(rangeLabel(shownDays[0], days[2]))}</span>
+        <h1 class="wk-title">${title} bij Davoz</h1>
+      </div>
+      <div class="seg" role="group" aria-label="Kies een weekend">
+        <button type="button" data-week="dit" aria-pressed="${state.week === 'dit'}">Dit weekend</button>
+        <button type="button" data-week="volgend" aria-pressed="${state.week === 'volgend'}">Volgend weekend</button>
+      </div>
+    </section>
+    <div class="layout">
+      <div class="col-main wk-days">${dayBlocks}</div>
+      <aside class="col-side">
+        <section class="wk-stats" aria-labelledby="wk-cijfers">
+          <h2 id="wk-cijfers">${title} in cijfers</h2>
+          <div class="wk-stat-grid">${stats.map(([label, value]) => `<div><b>${value}</b><span>${esc(label)}</span></div>`).join('')}</div>
+          <p>${esc(summary)}</p>
+        </section>
+        ${homeCards(home, byTime)}${noHome}
+      </aside>
+    </div>`;
+}
+
 function render() {
   const { team, match } = route();
-  if (team.key !== state.teamKey) { state.teamKey = team.key; state.tab = null; }
+  if (team?.key !== state.teamKey) { state.teamKey = team?.key; state.tab = null; }
   renderNav(team);
-  document.getElementById('app').innerHTML = match ? renderMatch(team, match) : renderTeam(team);
+  document.getElementById('app').innerHTML = !team ? renderWeekend() : match ? renderMatch(team, match) : renderTeam(team);
 }
 
 document.addEventListener('click', (e) => {
   const tab = e.target.closest('[data-tab]');
   if (tab) { state.tab = tab.dataset.tab; render(); }
+  const week = e.target.closest('[data-week]');
+  if (week) { state.week = week.dataset.week; render(); }
 });
 window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
 
