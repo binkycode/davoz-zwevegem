@@ -69,6 +69,10 @@ The script only looks up halls that are not in the file yet; fix an address by e
 
 ## Configuration
 
+`bickyBelow` in `config.json` sets the Bicky threshold for all teams: a set won while the
+opponent stays below this many points earns a burger icon and counts on the "Weetjes" page
+(season facts, computed in the browser from `data.json`). A team entry may override it.
+
 `config.json` holds the club (name, stamnummer, province) and a friendly label per series
 code (`WP3DA` → "Dames A · Promo 3 Dames"). New series that are not listed still appear,
 labelled with their code — add them to `config.json` to give them a nice name and position.

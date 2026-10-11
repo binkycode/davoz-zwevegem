@@ -1,6 +1,6 @@
 'use strict';
 
-const state = { data: null, tab: null, week: 'dit' };
+const state = { data: null, tab: null, week: 'dit', weetjesMode: 'club', weetjesTeam: null };
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Brussels' }).format(new Date());
@@ -29,18 +29,20 @@ const matchHref = (t, m) => `#/${encodeURIComponent(t.key)}/${encodeURIComponent
 // '#/' (or no hash) is the club weekend overview; '#/<team>' and '#/<team>/<match nr>' the team pages.
 function route() {
   const [, teamKey, matchNr] = location.hash.split('/').map(decodeURIComponent);
+  if (teamKey === 'weetjes') return { page: 'weetjes', team: null, match: null };
   const team = teamKey ? state.data.teams.find((t) => t.key === teamKey) : null;
-  if (!team) return { team: null, match: null };
+  if (!team) return { page: 'weekend', team: null, match: null };
   const match = matchNr ? team.matches.find((m) => m.nr === matchNr) : null;
   return { team, match };
 }
 
-function renderNav(current) {
+function renderNav(current, page) {
   const nav = document.getElementById('team-nav');
   const pill = (t) => `<a class="pill" href="${teamHref(t)}"${t.key === current?.key ? ' aria-current="page"' : ''}>${esc(t.label)}</a>`;
   const league = state.data.teams.filter((t) => !t.cup);
   const cup = state.data.teams.filter((t) => t.cup);
-  nav.innerHTML = `<a class="pill pill-weekend" href="#/"${current ? '' : ' aria-current="page"'}>Dit weekend</a>`
+  nav.innerHTML = `<a class="pill pill-weekend" href="#/"${page === 'weekend' ? ' aria-current="page"' : ''}>Dit weekend</a>`
+    + `<a class="pill" href="#/weetjes"${page === 'weetjes' ? ' aria-current="page"' : ''}>Weetjes</a>`
     + league.map(pill).join('') + (cup.length ? `<span class="pill-sep">Beker</span>${cup.map(pill).join('')}` : '');
   const active = nav.querySelector('[aria-current]');
   if (active) nav.scrollLeft = active.offsetLeft - (nav.clientWidth - active.offsetWidth) / 2;
@@ -449,11 +451,196 @@ function renderWeekend() {
     </div>`;
 }
 
+// ---- Season fun facts ("weetjes") -------------------------------------------------------
+
+const dayLong = (iso) => fmt(iso, { day: 'numeric', month: 'long' });
+const thousands = (n) => n.toLocaleString('nl-BE');
+const ourPts = (m, [h, a]) => (m.usHome ? h : a);
+const theirPts = (m, [h, a]) => (m.usHome ? a : h);
+// A tiebreak is a fifth set played to 15; youth series play a fifth set to 25 as a normal set.
+const isTiebreak = (i, [h, a]) => i === 4 && Math.max(h, a) < 25;
+
+function teamStats(t) {
+  const played = t.matches.filter((m) => m.result && m.sets.length);
+  const s = {
+    team: t, played: played.length, won: 0, setsWon: 0, setsLost: 0, ptsFor: 0, ptsAgainst: 0,
+    bicky: 0, tiebreaks: 0, tiebreaksWon: 0, biggest: null, streak: 0, streakFrom: null, streakTo: null, longestSet: null, winRun: 0
+  };
+  let run = 0, runFrom = null, winRun = 0;
+  for (const m of played) {
+    let pf = 0, pa = 0, sw = 0;
+    m.sets.forEach((set, i) => {
+      const w = setWon(m, set);
+      w ? s.setsWon++ : s.setsLost++;
+      if (w) sw++;
+      pf += ourPts(m, set); pa += theirPts(m, set);
+      if (bicky(t, m, set)) s.bicky++;
+      if (isTiebreak(i, set)) { s.tiebreaks++; if (w) s.tiebreaksWon++; }
+      if (w) {
+        if (!run) runFrom = m.date;
+        run++;
+        if (run > s.streak) { s.streak = run; s.streakFrom = runFrom; s.streakTo = m.date; }
+      } else run = 0;
+      if (!s.longestSet || set[0] + set[1] > s.longestSet.total) s.longestSet = { total: set[0] + set[1], set, m };
+    });
+    s.ptsFor += pf; s.ptsAgainst += pa;
+    if (outcome(m) === 'W') {
+      s.won++;
+      winRun++; s.winRun = Math.max(s.winRun, winRun);
+      // Measured per set, so 3-, 4- and 5-set formats compare fairly.
+      const perSet = (pf - pa) / m.sets.length;
+      if (!s.biggest || perSet > s.biggest.perSet || (perSet === s.biggest.perSet && pf - pa > s.biggest.diff)) s.biggest = { m, perSet, diff: pf - pa, pf, pa };
+    } else winRun = 0;
+  }
+  return s;
+}
+
+const perSetLabel = (x) => x.toLocaleString('nl-BE', { maximumFractionDigits: 1 });
+const matchLine = (m) => `${m.usHome ? 'Thuis tegen' : 'Bij'} ${m.usHome ? m.away : m.home} · ${dayLong(m.date)}`;
+const streakRange = (s) => s.streakFrom === s.streakTo ? dayLong(s.streakFrom) : `${dayLong(s.streakFrom)} – ${dayLong(s.streakTo)}`;
+const setChips = (m) => m.sets.map((set) => `<span class="ft-set">${set[0]}–${set[1]}</span>`).join('');
+
+function factCard({ dark, title, value, unit, who, sub, body, note, id }) {
+  return `
+    <section class="ft-card${dark ? ' dark' : ''}" aria-labelledby="${id}">
+      <h2 id="${id}" class="ft-eyebrow">${esc(title)}</h2>
+      <div class="ft-value"><b>${esc(value)}</b>${unit ? `<span>${esc(unit)}</span>` : ''}</div>
+      ${who ? `<div class="ft-who"><strong>${esc(who)}</strong>${sub ? `<span>${esc(sub)}</span>` : ''}</div>` : ''}
+      ${body ?? ''}
+      ${note ? `<span class="ft-note">${esc(note)}</span>` : ''}
+    </section>`;
+}
+
+function renderWeetjes() {
+  const all = state.data.teams.map(teamStats).filter((s) => s.played);
+  const teamKey = state.weetjesTeam && all.some((s) => s.team.key === state.weetjesTeam) ? state.weetjesTeam : all[0]?.team.key;
+  const perTeam = state.weetjesMode === 'team' && teamKey;
+  const sel = perTeam ? all.find((s) => s.team.key === teamKey) : null;
+  document.title = `Seizoensweetjes — Davoz Zwevegem`;
+  if (!all.length) return '<p class="empty">Nog geen gespeelde wedstrijden dit seizoen.</p>';
+
+  const byBig = all.filter((s) => s.biggest).sort((a, b) => b.biggest.perSet - a.biggest.perSet || b.biggest.diff - a.biggest.diff);
+  const byStreak = all.filter((s) => s.streak).sort((a, b) => b.streak - a.streak);
+  const byBicky = all.filter((s) => s.bicky).sort((a, b) => b.bicky - a.bicky || a.team.order - b.team.order);
+  const totalBicky = all.reduce((n, s) => n + s.bicky, 0);
+  const lastPlayed = all.flatMap((s) => s.team.matches.filter((m) => m.result)).map((m) => m.date).sort().at(-1);
+  const rankOf = (list, s) => list.indexOf(s) + 1;
+  const runnersUp = (list, fmtOne) => list.slice(1, 3).map(fmtOne).join(' en ');
+
+  // Card 1: biggest win
+  const bigS = perTeam ? sel : byBig[0];
+  const big = bigS?.biggest;
+  const bigCard = big ? factCard({
+    dark: true, id: 'ft-big', title: 'Grootste overwinning',
+    value: `${big.m.result.home}–${big.m.result.away}`, unit: `${big.pf}–${big.pa}`,
+    who: bigS.team.label, sub: matchLine(big.m),
+    body: `<div class="ft-sets">${setChips(big.m)}</div>`,
+    note: perTeam
+      ? `Gemiddeld ${perSetLabel(big.perSet)} punten verschil per set${rankOf(byBig, bigS) === 1 ? ' · clubrecord' : ''}.`
+      : `Gemiddeld ${perSetLabel(big.perSet)} punten verschil per set.${byBig.length > 1 ? ` Daarna: ${runnersUp(byBig, (s) => `${s.team.label} (+${perSetLabel(s.biggest.perSet)})`)}.` : ''}`
+  }) : factCard({ dark: true, id: 'ft-big', title: 'Grootste overwinning', value: '—', who: 'Nog geen overwinning', sub: 'De eerste komt er zeker aan.' });
+
+  // Card 2: longest run of won sets
+  const strS = perTeam ? sel : byStreak[0];
+  const streakCard = strS?.streak ? factCard({
+    id: 'ft-streak', title: 'Langste reeks gewonnen sets', value: String(strS.streak), unit: strS.streak === 1 ? 'set' : 'sets op rij',
+    who: strS.team.label, sub: streakRange(strS),
+    body: `<div class="ft-dots" role="img" aria-label="${strS.streak} gewonnen sets op rij">${'<span></span>'.repeat(Math.min(strS.streak, 30))}</div>`,
+    note: perTeam
+      ? (rankOf(byStreak, strS) === 1 ? 'Clubrecord dit seizoen.' : `${rankOf(byStreak, strS)}e van de club.`)
+      : (byStreak.length > 1 ? `Daarna: ${runnersUp(byStreak, (s) => `${s.team.label} (${s.streak} op rij)`)}.` : '')
+  }) : factCard({ id: 'ft-streak', title: 'Langste reeks gewonnen sets', value: '0', who: 'Nog geen set gewonnen', sub: 'Elke reeks begint met één set.' });
+
+  // Card 3: Bicky sets
+  const bickyNote = `Bicky-set: gewonnen set waarin de tegenstander onder de ${state.data.teams.find((t) => t.bickyBelow != null)?.bickyBelow ?? 10} punten blijft.`;
+  const bickyCount = perTeam ? sel.bicky : totalBicky;
+  const bickyWho = perTeam
+    ? (sel.bicky ? (rankOf(byBicky, sel) === 1 ? 'Meeste van de club' : `${rankOf(byBicky, sel)}e van de club`) : 'Nog geen Bicky-set')
+    : (byBicky.length ? `Bicky-koninginnen: ${byBicky[0].team.label}` : 'Nog geen Bicky-set');
+  const bickySub = perTeam
+    ? `${plural(totalBicky, 'Bicky-set', 'Bicky-sets')} voor de hele club`
+    : (byBicky.length ? `${byBicky[0].bicky} van de ${totalBicky} Bicky-sets van de club` : '');
+  const bickyCard = factCard({
+    id: 'ft-bicky', title: 'Bicky-sets', value: String(bickyCount),
+    body: `<div class="ft-bicky-icon">${burger({ bickyBelow: state.data.teams[0]?.bickyBelow ?? 10 })}</div>`,
+    who: bickyWho, sub: bickySub, note: bickyNote
+  });
+
+  // Bicky leaderboard: one series, so one colour; the selected (or leading) team in the accent.
+  const highlight = perTeam ? sel.team.key : byBicky[0]?.team.key;
+  const max = byBicky[0]?.bicky ?? 1;
+  const board = byBicky.length ? `
+    <section class="card ft-board" aria-labelledby="ft-board">
+      <div class="section-head"><h2 id="ft-board" class="section-title">Bicky-klassement</h2><span class="muted" style="font-size:14px">${plural(totalBicky, 'Bicky-set', 'Bicky-sets')} voor de hele club</span></div>
+      <table class="ft-bars">
+        <caption class="sr-only">Aantal Bicky-sets per ploeg</caption>
+        <tbody>${byBicky.map((s) => `
+          <tr${s.team.key === highlight ? ' class="hl"' : ''} title="${esc(s.team.label)}: ${s.bicky}">
+            <th scope="row"><a href="${teamHref(s.team)}">${esc(s.team.label)}</a></th>
+            <td class="ft-bar-cell"><span class="ft-bar" style="width:${Math.max(4, Math.round((s.bicky / max) * 100))}%"></span></td>
+            <td class="num ft-bar-value">${s.bicky}</td>
+          </tr>`).join('')}</tbody>
+      </table>
+      <span class="muted" style="font-size:14px">Ploegen zonder Bicky-set staan niet in het klassement.</span>
+    </section>` : '';
+
+  // Smaller facts
+  const facts = [];
+  if (perTeam) {
+    const row = sel.team.ranking.find((r) => r.teamId === sel.team.teamId);
+    facts.push({ value: `${sel.won} / ${sel.played}`, label: 'Matchen gewonnen', sub: sel.won === sel.played ? `Nog ongeslagen${row ? ` · ${row.pos}e in ${sel.team.division}` : ''}` : (row ? `${row.pos}e in ${sel.team.division}` : sel.team.division) });
+    facts.push({ value: `${sel.setsWon}–${sel.setsLost}`, label: 'Sets', sub: sel.setsLost <= 2 ? `Slechts ${plural(sel.setsLost, 'set', 'sets')} verloren` : 'Gewonnen tegen verloren' });
+    facts.push({ value: thousands(sel.ptsFor), label: 'Punten gescoord', sub: `${thousands(sel.ptsAgainst)} tegen` });
+    if (sel.longestSet) facts.push({ value: `${sel.longestSet.set[0]}–${sel.longestSet.set[1]}`, label: 'Langste set', sub: `${sel.longestSet.m.usHome ? 'Tegen' : 'Bij'} ${sel.longestSet.m.usHome ? sel.longestSet.m.away : sel.longestSet.m.home}, ${dayLong(sel.longestSet.m.date)}` });
+    if (sel.tiebreaks) facts.push({ value: `${sel.tiebreaksWon} / ${sel.tiebreaks}`, label: 'Tiebreaks gewonnen', sub: 'Vijfde set tot 15' });
+  } else {
+    const longest = all.filter((s) => s.longestSet).sort((a, b) => b.longestSet.total - a.longestSet.total)[0];
+    if (longest) facts.push({ value: `${longest.longestSet.set[0]}–${longest.longestSet.set[1]}`, label: 'Langste set', sub: `${longest.team.label} ${longest.longestSet.m.usHome ? 'tegen' : 'bij'} ${longest.longestSet.m.usHome ? longest.longestSet.m.away : longest.longestSet.m.home}, ${dayLong(longest.longestSet.m.date)}` });
+    const unbeaten = all.filter((s) => s.played >= 3 && s.won === s.played);
+    if (unbeaten.length) facts.push({ value: unbeaten.length === 1 ? `${unbeaten[0].won} / ${unbeaten[0].played}` : String(unbeaten.length), label: 'Nog ongeslagen', sub: unbeaten.length === 1 ? `${unbeaten[0].team.label} won al haar matchen` : listNames(unbeaten.map((s) => s.team.label)) });
+    else {
+      const runner = [...all].sort((a, b) => b.winRun - a.winRun)[0];
+      if (runner?.winRun > 1) facts.push({ value: String(runner.winRun), label: 'Langste winstreeks', sub: `${runner.team.label}, matchen op rij gewonnen` });
+    }
+    const tb = all.reduce((n, s) => n + s.tiebreaks, 0), tbw = all.reduce((n, s) => n + s.tiebreaksWon, 0);
+    if (tb) facts.push({ value: `${tbw} / ${tb}`, label: 'Tiebreaks gewonnen', sub: tbw * 2 < tb ? 'De vijfde set blijft een werkpunt' : 'Sterk in de vijfde set' });
+    facts.push({ value: thousands(all.reduce((n, s) => n + s.ptsFor, 0)), label: 'Punten gescoord', sub: `Alle ploegen samen, in ${all.reduce((n, s) => n + s.setsWon, 0)} gewonnen sets` });
+  }
+
+  return `
+    <section class="wk-intro">
+      <div>
+        <span class="wk-range">Seizoen tot en met ${esc(dayLong(lastPlayed))}</span>
+        <h1 class="wk-title">${perTeam ? `${esc(sel.team.label)} in weetjes` : 'Seizoensweetjes'}</h1>
+      </div>
+      <div class="ft-controls">
+        <div class="seg" role="group" aria-label="Toon weetjes van">
+          <button type="button" data-ft-mode="club" aria-pressed="${!perTeam}">Hele club</button>
+          <button type="button" data-ft-mode="team" aria-pressed="${!!perTeam}">Per ploeg</button>
+        </div>
+        ${perTeam ? `
+          <label class="ft-select">Ploeg
+            <select id="ft-team">${all.map((s) => `<option value="${esc(s.team.key)}"${s.team.key === teamKey ? ' selected' : ''}>${esc(s.team.label)}</option>`).join('')}</select>
+          </label>` : ''}
+      </div>
+    </section>
+    <div class="ft-cards">${bigCard}${streakCard}${bickyCard}</div>
+    <div class="layout" style="margin-top:24px">
+      <div class="col-main">${board}</div>
+      <aside class="col-side">
+        <section aria-labelledby="ft-more" class="ft-facts">
+          <h2 id="ft-more" class="section-title">Nog meer weetjes</h2>
+          ${facts.map((f) => `<div class="ft-fact"><b>${esc(f.value)}</b><div><strong>${esc(f.label)}</strong><span class="muted">${esc(f.sub)}</span></div></div>`).join('')}
+        </section>
+      </aside>
+    </div>`;
+}
+
 function render() {
-  const { team, match } = route();
+  const { page, team, match } = route();
   if (team?.key !== state.teamKey) { state.teamKey = team?.key; state.tab = null; }
-  renderNav(team);
-  document.getElementById('app').innerHTML = !team ? renderWeekend() : match ? renderMatch(team, match) : renderTeam(team);
+  renderNav(team, page);
+  document.getElementById('app').innerHTML = page === 'weetjes' ? renderWeetjes() : !team ? renderWeekend() : match ? renderMatch(team, match) : renderTeam(team);
 }
 
 document.addEventListener('click', (e) => {
@@ -461,6 +648,8 @@ document.addEventListener('click', (e) => {
   if (tab) { state.tab = tab.dataset.tab; render(); }
   const week = e.target.closest('[data-week]');
   if (week) { state.week = week.dataset.week; render(); }
+  const mode = e.target.closest('[data-ft-mode]');
+  if (mode) { state.weetjesMode = mode.dataset.ftMode; render(); }
   const copy = e.target.closest('[data-copy]');
   if (copy) {
     navigator.clipboard.writeText(copy.dataset.copy).then(
@@ -468,6 +657,9 @@ document.addEventListener('click', (e) => {
       () => { window.prompt('Kopieer deze link:', copy.dataset.copy); }
     );
   }
+});
+document.addEventListener('change', (e) => {
+  if (e.target.id === 'ft-team') { state.weetjesTeam = e.target.value; render(); document.getElementById('ft-team')?.focus(); }
 });
 window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
 

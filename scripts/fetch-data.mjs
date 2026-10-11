@@ -83,7 +83,8 @@ for (const m of rawMatches) {
       teamName: usHome ? m.thuisploeg : m.bezoekersploeg,
       label: cfg.label ?? null, division: cfg.division ?? m.reeks,
       cup: !!cfg.cup || /^WB/.test(m.reeks), order: cfg.order ?? 99,
-      bickyBelow: cfg.bickyBelow ?? null,
+      // A team-level value overrides the club-wide Bicky threshold.
+      bickyBelow: cfg.bickyBelow ?? config.bickyBelow ?? null,
       matches: [], ranking: []
     });
   }

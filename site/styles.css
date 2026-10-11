@@ -225,6 +225,47 @@ a.h2h-row:hover { color: var(--ink); border-color: var(--muted); }
 .h2h-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
 .h2h-score { font: 800 26px/1 var(--display); }
 
+/* Season fun facts */
+.ft-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.seg button { white-space: nowrap; }
+@media (max-width: 520px) { .ft-controls { width: 100%; } .ft-controls .seg { flex: 1 1 100%; } }
+.ft-select { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.ft-select select { min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); font: 600 15px var(--body); }
+.ft-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+.ft-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 12px; }
+.ft-card.dark { background: var(--navy); border-color: var(--navy); color: var(--on-navy); }
+.ft-eyebrow { font: 700 16px var(--display); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.ft-card.dark .ft-eyebrow, .ft-card.dark .ft-who span, .ft-card.dark .ft-note { color: var(--on-navy-muted); }
+.ft-value { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.ft-value b { font: 800 68px/0.9 var(--display); }
+.ft-value span { font: 700 22px var(--display); }
+.ft-card.dark .ft-value span { color: var(--accent); }
+.ft-who { display: flex; flex-direction: column; }
+.ft-who strong { font-size: 17px; }
+.ft-who span { color: var(--muted); }
+.ft-sets { display: flex; flex-wrap: wrap; gap: 6px; }
+.ft-set { font: 700 18px var(--display); padding: 4px 10px; border-radius: 8px; background: var(--navy-2); }
+.ft-dots { display: flex; flex-wrap: wrap; gap: 4px; }
+.ft-dots span { width: 22px; height: 22px; border-radius: 6px; background: var(--accent); }
+.ft-bicky-icon .burger { width: 52px; height: 52px; margin: 0; }
+.ft-note { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+.ft-card.dark .ft-note { border-top-color: var(--navy-line); }
+.ft-board { display: flex; flex-direction: column; gap: 8px; }
+.ft-bars th { width: 150px; text-transform: none; letter-spacing: 0; font-size: 15px; font-weight: 500; color: var(--ink); padding: 6px 12px 6px 0; }
+.ft-bars th a { text-decoration: none; }
+.ft-bars th a:hover { text-decoration: underline; }
+.ft-bars td { border-top: 0; padding: 6px 0; }
+.ft-bar-cell { width: 100%; }
+.ft-bar { display: block; height: 22px; border-radius: 0 4px 4px 0; background: var(--ink); }
+.ft-bars tr.hl th { font-weight: 700; }
+.ft-bars tr.hl .ft-bar { background: var(--accent); }
+.ft-bar-value { width: 40px; font: 800 22px var(--display); padding-left: 12px !important; }
+.ft-facts { display: flex; flex-direction: column; gap: 10px; }
+.ft-fact { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; gap: 16px; }
+.ft-fact b { flex: 0 0 auto; min-width: 84px; font: 800 30px/1 var(--display); }
+.ft-fact div { display: flex; flex-direction: column; }
+.ft-fact .muted { font-size: 14px; }
+
 /* Calendar subscription */
 .cal-card { display: flex; flex-direction: column; gap: 8px; }
 .cal-card .muted { font-size: 15px; }
