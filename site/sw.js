@@ -2,7 +2,7 @@
 // Same-origin requests go to the network first (so results are always fresh when online)
 // and fall back to the cache; Google Fonts are served from the cache once fetched.
 
-const CACHE = 'davoz-v2';
+const CACHE = 'davoz-v3';
 const SHELL = ['./', 'index.html', 'app.js', 'styles.css', 'data.json', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/apple-touch-icon.png'];
 
 // Bypass the browser's HTTP cache, otherwise an older copy of a file can end up in the offline cache.

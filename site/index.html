@@ -2,12 +2,12 @@
 <html lang="nl">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Davoz Zwevegem — uitslagen</title>
   <meta name="description" content="Uitslagen, kalender en klassement van alle ploegen van volleybalclub Davoz Zwevegem.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&display=swap">
   <link rel="stylesheet" href="styles.css">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40' fill='none' stroke='%23FF7A1A' stroke-width='3' stroke-linecap='round'%3E%3Ccircle cx='20' cy='20' r='17'/%3E%3Cpath d='M20 20A12 12 0 0 1 8 7.96M20 20A12 12 0 0 1 36.43 15.63M20 20A12 12 0 0 1 15.57 36.41M21.6 25.93A18 18 0 0 1 3.62 15.46M14.07 18.42A18 18 0 0 1 32.12 8.08M24.33 15.65A18 18 0 0 1 24.26 36.46'/%3E%3C/svg%3E">
   <link rel="manifest" href="manifest.webmanifest">
@@ -31,7 +31,6 @@
         <span class="updated" id="updated"></span>
       </div>
     </div>
-    <nav class="wrap team-nav" aria-label="Kies een ploeg" id="team-nav"></nav>
   </header>
   <div class="offline" id="offline" role="status" hidden>
     <div class="wrap">Je bent offline. Je ziet de uitslagen van de laatste keer dat de site geladen werd.</div>
@@ -43,8 +42,17 @@
 
   <footer class="site-footer">
     <div class="wrap">
-      <span>Data: VolleyAdmin2 — Volley Vlaanderen. Anonieme bezoekersstatistieken via GoatCounter, zonder cookies.</span>
+      <span>Data: VolleyAdmin2 — Volley Vlaanderen. Anonieme bezoekersstatistieken via GoatCounter, zonder cookies. Je favoriete ploegen worden alleen op dit toestel bewaard.</span>
     </div>
   </footer>
+
+  <nav class="tabbar" aria-label="Hoofdmenu">
+    <div class="tabbar-inner" id="tabbar">
+      <a href="#/" data-tabbar="weekend"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Weekend</a>
+      <a href="#/mijn" data-tabbar="mijn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.3l-5.8 3.1 1.1-6.5L2.6 9.3l6.5-.9z"/></svg>Mijn ploeg</a>
+      <a href="#/ploegen" data-tabbar="ploegen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>Ploegen</a>
+      <a href="#/weetjes" data-tabbar="weetjes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-9M12 20V4M19 20v-6"/></svg>Weetjes</a>
+    </div>
+  </nav>
 </body>
 </html>

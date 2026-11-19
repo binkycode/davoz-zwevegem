@@ -1,6 +1,17 @@
 'use strict';
 
-const state = { data: null, tab: null, week: 'dit', weetjesMode: 'club', weetjesTeam: null };
+const state = { data: null, tab: null, week: 'dit', weetjesMode: 'club', weetjesTeam: null, favs: [], mijnKey: null, lastTab: 'weekend' };
+
+// Favourite teams live only in this browser (no account, no cookies). Storage can be blocked
+// (private mode) or wiped; the site then simply works without favourites.
+const FAV_KEY = 'davoz-favorieten';
+try { const v = JSON.parse(localStorage.getItem(FAV_KEY) ?? '[]'); if (Array.isArray(v)) state.favs = v.filter((k) => typeof k === 'string'); } catch { /* no storage */ }
+const saveFavs = () => { try { localStorage.setItem(FAV_KEY, JSON.stringify(state.favs)); } catch { /* no storage */ } };
+const isFav = (t) => state.favs.includes(t.key);
+// Keys of teams that left the feed (e.g. a new season) are ignored, not deleted.
+const favTeams = () => state.data.teams.filter(isFav).sort((a, b) => state.favs.indexOf(a.key) - state.favs.indexOf(b.key));
+const STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.3l-5.8 3.1 1.1-6.5L2.6 9.3l6.5-.9z"/></svg>';
+const starButton = (t) => `<button type="button" class="star" data-fav="${esc(t.key)}" aria-pressed="${isFav(t)}" aria-label="Favoriet: ${esc(t.label)}" title="${isFav(t) ? 'Verwijder uit Mijn ploeg' : 'Zet bij Mijn ploeg'}">${STAR}</button>`;
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Brussels' }).format(new Date());
@@ -29,23 +40,20 @@ const matchHref = (t, m) => `#/${encodeURIComponent(t.key)}/${encodeURIComponent
 // '#/' (or no hash) is the club weekend overview; '#/<team>' and '#/<team>/<match nr>' the team pages.
 function route() {
   const [, teamKey, matchNr] = location.hash.split('/').map(decodeURIComponent);
-  if (teamKey === 'weetjes') return { page: 'weetjes', team: null, match: null };
+  if (['weetjes', 'ploegen', 'mijn'].includes(teamKey)) return { page: teamKey, team: null, match: null };
   const team = teamKey ? state.data.teams.find((t) => t.key === teamKey) : null;
   if (!team) return { page: 'weekend', team: null, match: null };
   const match = matchNr ? team.matches.find((m) => m.nr === matchNr) : null;
-  return { team, match };
+  return { page: 'team', team, match };
 }
 
-function renderNav(current, page) {
-  const nav = document.getElementById('team-nav');
-  const pill = (t) => `<a class="pill" href="${teamHref(t)}"${t.key === current?.key ? ' aria-current="page"' : ''}>${esc(t.label)}</a>`;
-  const league = state.data.teams.filter((t) => !t.cup);
-  const cup = state.data.teams.filter((t) => t.cup);
-  nav.innerHTML = `<a class="pill pill-weekend" href="#/"${page === 'weekend' ? ' aria-current="page"' : ''}>Dit weekend</a>`
-    + `<a class="pill" href="#/weetjes"${page === 'weetjes' ? ' aria-current="page"' : ''}>Weetjes</a>`
-    + league.map(pill).join('') + (cup.length ? `<span class="pill-sep">Beker</span>${cup.map(pill).join('')}` : '');
-  const active = nav.querySelector('[aria-current]');
-  if (active) nav.scrollLeft = active.offsetLeft - (nav.clientWidth - active.offsetWidth) / 2;
+// Team and match pages keep the tab they were opened from (Mijn ploeg or Ploegen).
+function renderTabbar(page, team) {
+  const active = page === 'team' ? (state.lastTab === 'mijn' && isFav(team) ? 'mijn' : 'ploegen') : page;
+  document.querySelectorAll('[data-tabbar]').forEach((a) => {
+    if (a.dataset.tabbar === active) a.setAttribute('aria-current', 'page');
+    else a.removeAttribute('aria-current');
+  });
 }
 
 // Youth series play a fixed number of sets, so a match can end in a draw (2–2).
@@ -81,7 +89,7 @@ function matchRow(t, m) {
 }
 
 function scoreboard(t, m, { title, link }) {
-  return `
+  const html = `
     <section class="scoreboard" aria-label="${esc(title)}">
       <div class="eyebrow"><h2>${esc(title)} · ${esc(t.division)}</h2><span>${esc(dateLong(m.date))}${m.time ? ' · ' + esc(m.time) : ''}</span></div>
       <div class="score-row">
@@ -91,8 +99,10 @@ function scoreboard(t, m, { title, link }) {
       </div>
       ${m.sets.length ? `<div class="set-chips">${m.sets.map((s, i) => `
         <div class="set-chip${setWon(m, s) ? ' won' : ''}"><small>Set ${i + 1}</small><b>${s[0]}–${s[1]}${bicky(t, m, s) ? burger(t) : ''}</b><i></i></div>`).join('')}</div>` : ''}
-      ${link ? `<a class="more" href="${matchHref(t, m)}">Bekijk matchdetail →</a>` : ''}
+      ${link ? '<span class="more">Bekijk matchdetail →</span>' : ''}
     </section>`;
+  // The whole scoreboard is the link, not only the text at the bottom.
+  return link ? `<a class="scoreboard-link" href="${matchHref(t, m)}">${html}</a>` : html;
 }
 
 function statsCard(t, played) {
@@ -172,8 +182,16 @@ function renderTeam(t) {
   if (!state.tab) state.tab = played.length ? 'uitslagen' : 'kalender';
   const list = state.tab === 'uitslagen' ? [...played, ...open].sort((a, b) => b.date.localeCompare(a.date)) : upcoming;
   document.title = `${t.label} — Davoz Zwevegem`;
+  const rank = t.ranking.find((r) => r.teamId === t.teamId)?.pos;
 
   return `
+    <div class="page-head">
+      <div>
+        <h1>${esc(t.label)}</h1>
+        <span class="muted">${esc(t.division)}${rank ? ` · ${rank}e` : ''}</span>
+      </div>
+      ${starButton(t)}
+    </div>
     <div class="layout">
       <div class="col-main">
         ${last ? scoreboard(t, last, { title: 'Laatste uitslag', link: true }) : ''}
@@ -204,6 +222,89 @@ function renderTeam(t) {
         ${calendarCard(t.calendar, 'In je agenda', `Alle matchen van ${t.label} in je gsm-agenda, met sporthal en adres. Verplaatste matchen passen zich vanzelf aan.`, slug(t.label), t.label)}
       </aside>
     </div>`;
+}
+
+// ---- Teams list and favourites --------------------------------------------------------
+
+function renderPloegen() {
+  document.title = 'Ploegen — Davoz Zwevegem';
+  const groupOf = (t) => (t.cup ? 'Beker' : t.group ?? 'Overige ploegen');
+  const groups = ['Seniors', 'Jeugd', 'Overige ploegen', 'Beker'];
+  const row = (t) => {
+    const rank = t.ranking.find((r) => r.teamId === t.teamId)?.pos;
+    const last = t.matches.filter((m) => m.result).at(-1);
+    return `
+      <div class="team-row">
+        <a class="team-link" href="${teamHref(t)}">
+          <span><strong>${esc(t.label)}</strong><span class="muted">${esc(t.division)}${rank ? ` · ${rank}e` : ''}</span></span>
+          ${last ? `<span class="team-last"><span class="sr-only">Laatste uitslag </span>${last.result.home}–${last.result.away}${badge(last)}</span>` : ''}
+        </a>
+        ${starButton(t)}
+      </div>`;
+  };
+  return `
+    <div class="page-head"><div><h1>Ploegen</h1><span class="muted">Tik op de ster om een ploeg bij Mijn ploeg te zetten.</span></div></div>
+    <div class="team-groups">${groups.map((g) => {
+      const list = state.data.teams.filter((t) => groupOf(t) === g);
+      return list.length ? `
+        <section aria-labelledby="groep-${slug(g)}">
+          <h2 class="group-title" id="groep-${slug(g)}">${esc(g)}</h2>
+          <div class="team-list">${list.map(row).join('')}</div>
+        </section>` : '';
+    }).join('')}</div>`;
+}
+
+// "Mijn ploeg": the team page of a favourite, with a switcher when there are several.
+function mijnTeam() {
+  const favs = favTeams();
+  return favs.find((t) => t.key === state.mijnKey) ?? favs[0] ?? null;
+}
+
+function renderMijn(t) {
+  if (!t) {
+    document.title = 'Mijn ploeg — Davoz Zwevegem';
+    return `
+      <section class="empty-state">
+        <h1>Mijn ploeg</h1>
+        <p class="muted" style="margin:0">Kies de ploegen die je volgt. Hun uitslagen, volgende match en klassement staan dan hier, en bovenaan de weekendpagina.</p>
+        <a class="btn" href="#/ploegen">Kies je ploeg</a>
+      </section>`;
+  }
+  const favs = favTeams();
+  const switcher = favs.length > 1 ? `
+    <div class="seg fav-switch" role="group" aria-label="Kies een van je ploegen">
+      ${favs.map((f) => `<button type="button" data-mijn="${esc(f.key)}" aria-pressed="${f.key === t.key}">${esc(f.label)}</button>`).join('')}
+    </div>` : '';
+  return switcher + renderTeam(t);
+}
+
+// Top of the weekend page: this weekend's matches of the favourite teams.
+function favCard(items, title) {
+  const favs = favTeams();
+  if (!favs.length) return '';
+  const list = items.filter((x) => isFav(x.t)).sort((a, b) => a.m.date.localeCompare(b.m.date) || (a.m.time ?? '').localeCompare(b.m.time ?? ''));
+  const rows = list.map(({ t, m }) => {
+    const opp = m.usHome ? `tegen ${m.away}` : `bij ${m.home}`;
+    const right = m.result
+      ? `<a class="fav-score" href="${matchHref(t, m)}" aria-label="Matchdetail ${esc(m.home)} – ${esc(m.away)}">${m.result.home}–${m.result.away}${badge(m)}</a>`
+      : m.postponed ? '<span class="meta">Uitgesteld</span>' : '';
+    return `
+      <div class="fav-match">
+        <div class="fav-when"><small>${esc(capital(dayShort(m.date)))}</small>${esc(m.time ?? '–')}</div>
+        <div class="fav-body">
+          <span><a class="fav-team" href="${teamHref(t)}">${esc(t.label)}</a> ${esc(opp)}</span>
+          <span class="meta">${m.usHome ? 'Thuis' : 'Uit'}${m.hall ? ' · ' + esc(m.hall) : ''}</span>
+          ${!m.result && !started(m) ? routeLink(m).replace('Route in Google Maps', 'Route') : ''}
+        </div>
+        ${right}
+      </div>`;
+  }).join('');
+  const who = favs.length === 1 ? favs[0].label : 'Jouw ploegen';
+  return `
+    <section class="fav-card" aria-labelledby="fav-title">
+      <h2 id="fav-title"><span>${STAR}${esc(who)}</span><span>${list.length ? plural(list.length, 'match', 'matchen') : ''}</span></h2>
+      ${rows || `<p class="fav-empty">${favs.length === 1 ? `${esc(favs[0].label)} speelt` : 'Jouw ploegen spelen'} ${title.toLowerCase()} niet.</p>`}
+    </section>`;
 }
 
 // All meetings with this opponent in the same series: normally a first and a return leg,
@@ -330,10 +431,7 @@ const started = (m) => m.date < today || (m.date === today && !!m.time && m.time
 function weekendCard({ t, m }) {
   const rank = t.ranking.find((r) => r.teamId === t.teamId)?.pos;
   const sets = m.sets.map((s) => `<span class="chip${setWon(m, s) ? ' won' : ''}">${s[0]}–${s[1]}${bicky(t, m, s) ? burger(t) : ''}</span>`).join('');
-  let right = '';
-  if (m.result) right = `<a class="wk-score" href="${matchHref(t, m)}" aria-label="Matchdetail ${esc(m.home)} – ${esc(m.away)}"><b>${m.result.home}–${m.result.away}</b>${badge(m)}</a>`;
-  else if (m.postponed) right = '<span class="wk-pending">Uitgesteld</span>';
-  else if (started(m)) right = '<span class="wk-pending">Uitslag volgt</span>';
+  const right = resultCell(t, m);
   const hall = !m.result && !started(m) && m.hall
     ? `<div class="wk-hall"><span class="muted">${esc(m.hall)}${m.address?.street ? ' · ' + esc(m.address.street) : ''}</span>${routeLink(m).replace('Route in Google Maps', 'Route')}</div>`
     : '';
@@ -353,31 +451,44 @@ function weekendCard({ t, m }) {
     </article>`;
 }
 
-function homeCards(home, byTime) {
-  return [...new Set(home.map((x) => x.m.hall))].map((hall) => {
-    const list = home.filter((x) => x.m.hall === hall).sort((a, b) => a.m.date.localeCompare(b.m.date) || byTime(a, b));
-    const multiDay = new Set(list.map((x) => x.m.date)).size > 1;
-    const keys = [...new Set(list.map((x) => `${x.m.date}|${x.m.time ?? '–'}`))];
-    const slots = keys.map((k) => {
-      const [date, time] = k.split('|');
-      const teams = list.filter((x) => x.m.date === date && (x.m.time ?? '–') === time).map((x) => x.t.label).join(' · ');
-      return `<div><b>${esc(`${multiDay ? capital(dayShort(date)) + ' ' : ''}${time}`)}</b><span class="muted">${esc(teams)}</span></div>`;
-    }).join('');
-    const timed = list.filter((x) => x.m.time);
-    const span = timed.length && !multiDay ? ` van ${timed[0].m.time} tot ongeveer ${endEstimate(timed.at(-1).m.time)}` : '';
-    const [town, ...rest] = (hall ?? '').split(',');
-    const m = list[0].m;
+const resultCell = (t, m) => {
+  if (m.result) return `<a class="wk-score" href="${matchHref(t, m)}" aria-label="Matchdetail ${esc(m.home)} – ${esc(m.away)}"><b>${m.result.home}–${m.result.away}</b>${badge(m)}</a>`;
+  if (m.postponed) return '<span class="wk-pending">Uitgesteld</span>';
+  if (started(m)) return '<span class="wk-pending">Uitslag volgt</span>';
+  return '';
+};
+
+// One day's home matches in one hall: the address and route once, then a compact row per match.
+function hallGroup(hall, list) {
+  const m = list[0].m;
+  const [town, ...rest] = (hall ?? '').split(',');
+  const timed = list.filter((x) => x.m.time);
+  const span = timed.length ? ` · ${timed[0].m.time} tot ±${endEstimate(timed.at(-1).m.time)}` : '';
+  const rows = list.map(({ t, m: x }) => {
+    const sets = x.sets.map((s) => `<span class="chip${setWon(x, s) ? ' won' : ''}">${s[0]}–${s[1]}${bicky(t, x, s) ? burger(t) : ''}</span>`).join('');
+    const right = resultCell(t, x);
     return `
-      <section class="card wk-home" aria-label="Thuismatchen in ${esc(hall)}">
-        <span class="tag">Thuis in ${esc(town)}</span>
-        <h2 class="wk-home-title">${esc(rest.join(',').trim() || hall)}</h2>
-        ${fullAddress(m) ? `<span>${esc(fullAddress(m))}</span>` : ''}
-        ${m.address?.note ? `<span class="muted">${esc(m.address.note)}</span>` : ''}
-        <div class="wk-home-slots">${slots}</div>
-        <span class="muted">${plural(list.length, 'match', 'matchen')}${span}</span>
-        ${routeLink(m)}
-      </section>`;
+      <div class="wk-row">
+        <span class="wk-time">${esc(x.time ?? '–')}</span>
+        <div class="wk-row-body">
+          <a class="wk-team" href="${teamHref(t)}">${esc(t.label)}</a>
+          <span class="wk-teams">${name(x, 'home')} – ${name(x, 'away')}</span>
+          ${sets ? `<div class="chips">${sets}</div>` : ''}
+        </div>
+        <div class="wk-right">${right}</div>
+      </div>`;
   }).join('');
+  return `
+    <section class="wk-hall-group" aria-label="Thuis in ${esc(hall ?? 'onbekende sporthal')}">
+      <div class="wk-hall-head">
+        <div>
+          <strong>Thuis · ${esc(rest.join(',').trim() || hall || 'sporthal onbekend')}</strong>
+          <span class="muted">${esc(fullAddress(m) ?? town)}${esc(span)}</span>
+        </div>
+        ${routeLink(m).replace('Route in Google Maps', 'Route')}
+      </div>
+      ${rows}
+    </section>`;
 }
 
 function renderWeekend() {
@@ -391,15 +502,21 @@ function renderWeekend() {
 
   const dayBlocks = shownDays.map((d) => {
     const list = items.filter((x) => x.m.date === d).sort(byTime);
-    const times = [...new Set(list.map((x) => x.m.time ?? '–'))];
+    const homeList = list.filter((x) => x.m.usHome);
+    const awayList = list.filter((x) => !x.m.usHome);
+    const halls = [...new Set(homeList.map((x) => x.m.hall))];
+    const awayTimes = [...new Set(awayList.map((x) => x.m.time ?? '–'))];
+    const away = awayList.length ? `
+      ${homeList.length ? '<h3 class="wk-away-title">Op verplaatsing</h3>' : ''}
+      ${awayTimes.map((time) => `
+        <div class="wk-slot">
+          <div class="wk-time">${esc(time)}</div>
+          <div class="wk-slot-matches">${awayList.filter((x) => (x.m.time ?? '–') === time).map(weekendCard).join('')}</div>
+        </div>`).join('')}` : '';
     return `
       <section class="wk-day" aria-labelledby="dag-${d}">
         <h2 class="wk-day-title" id="dag-${d}">${esc(dayTitle(d))}${list.length ? ` <span>${plural(list.length, 'wedstrijd', 'wedstrijden')}</span>` : ''}</h2>
-        ${list.length ? times.map((time) => `
-          <div class="wk-slot">
-            <div class="wk-time">${esc(time)}</div>
-            <div class="wk-slot-matches">${list.filter((x) => (x.m.time ?? '–') === time).map(weekendCard).join('')}</div>
-          </div>`).join('') : '<p class="wk-empty">Geen wedstrijden.</p>'}
+        ${list.length ? halls.map((h) => hallGroup(h, homeList.filter((x) => x.m.hall === h))).join('') + away : '<p class="wk-empty">Geen wedstrijden.</p>'}
       </section>`;
   }).join('');
 
@@ -437,6 +554,7 @@ function renderWeekend() {
         <button type="button" data-week="volgend" aria-pressed="${state.week === 'volgend'}">Volgend weekend</button>
       </div>
     </section>
+    ${favCard(items, title)}
     <div class="layout">
       <div class="col-main wk-days">${dayBlocks}</div>
       <aside class="col-side">
@@ -445,8 +563,8 @@ function renderWeekend() {
           <div class="wk-stat-grid">${stats.map(([label, value]) => `<div><b>${value}</b><span>${esc(label)}</span></div>`).join('')}</div>
           <p>${esc(summary)}</p>
         </section>
-        ${homeCards(home, byTime)}${noHome}
-        ${calendarCard(state.data.calendar, 'Altijd op de hoogte', 'Alle matchen van de club in je gsm-agenda. Wil je alleen je eigen ploeg? Kies ze bovenaan.', 'club', 'hele club')}
+        ${noHome}
+        ${calendarCard(state.data.calendar, 'Altijd op de hoogte', 'Alle matchen van de club in je gsm-agenda. Wil je alleen je eigen ploeg? Open ze via Ploegen.', 'club', 'hele club')}
       </aside>
     </div>`;
 }
@@ -648,21 +766,44 @@ const trackEvent = (name, title) => gc({ path: name, title: title ?? name, event
 // The site navigates with '#/…' links, so every view is counted as its own page.
 let lastTracked = null;
 function trackPage(page, team, match) {
-  const path = page === 'weetjes' ? '/weetjes' : !team ? '/' : `/ploeg/${slug(team.label)}${match ? `/match/${slug(match.nr)}` : ''}`;
+  const path = page === 'weetjes' ? '/weetjes' : page === 'ploegen' ? '/ploegen'
+    : page === 'mijn' ? (team ? `/mijn-ploeg/${slug(team.label)}` : '/mijn-ploeg')
+    : !team ? '/' : `/ploeg/${slug(team.label)}${match ? `/match/${slug(match.nr)}` : ''}`;
   if (path === lastTracked) return;
   lastTracked = path;
   gc({ path, title: document.title });
 }
 
 function render() {
-  const { page, team, match } = route();
+  const r = route();
+  const { page, match } = r;
+  const team = page === 'mijn' ? mijnTeam() : r.team;
   if (team?.key !== state.teamKey) { state.teamKey = team?.key; state.tab = null; }
-  renderNav(team, page);
-  document.getElementById('app').innerHTML = page === 'weetjes' ? renderWeetjes() : !team ? renderWeekend() : match ? renderMatch(team, match) : renderTeam(team);
+  if (page !== 'team') state.lastTab = page;
+  renderTabbar(page, team);
+  const app = document.getElementById('app');
+  app.innerHTML = page === 'weetjes' ? renderWeetjes() : page === 'ploegen' ? renderPloegen() : page === 'mijn' ? renderMijn(team)
+    : !team ? renderWeekend() : match ? renderMatch(team, match) : renderTeam(team);
   trackPage(page, team, match);
 }
 
+function toggleFav(key) {
+  const t = state.data.teams.find((x) => x.key === key);
+  if (!t) return;
+  const on = !isFav(t);
+  state.favs = on ? [...state.favs, key] : state.favs.filter((k) => k !== key);
+  saveFavs();
+  trackEvent(on ? 'favoriet-aan' : 'favoriet-uit', `${on ? 'Favoriet' : 'Geen favoriet meer'}: ${t.label}`);
+  render();
+  // The list is redrawn; keep keyboard and screen reader focus on the same star.
+  document.querySelector(`[data-fav="${CSS.escape(key)}"]`)?.focus();
+}
+
 document.addEventListener('click', (e) => {
+  const fav = e.target.closest('[data-fav]');
+  if (fav) { toggleFav(fav.dataset.fav); return; }
+  const mijn = e.target.closest('[data-mijn]');
+  if (mijn) { state.mijnKey = mijn.dataset.mijn; render(); return; }
   const tab = e.target.closest('[data-tab]');
   if (tab) { state.tab = tab.dataset.tab; render(); }
   const week = e.target.closest('[data-week]');
@@ -713,7 +854,8 @@ installButton?.addEventListener('click', async () => {
 });
 window.addEventListener('appinstalled', () => { if (installButton) installButton.hidden = true; trackEvent('app-geinstalleerd', 'App geïnstalleerd'); });
 // Opened from the home screen (installed app) rather than in the browser.
-if (window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone) trackEvent('app-geopend', 'App geopend vanaf startscherm');
+const standalone = !!(window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone);
+if (standalone) trackEvent('app-geopend', 'App geopend vanaf startscherm');
 
 fetch('data.json', { cache: 'no-cache' })
   .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
@@ -721,6 +863,8 @@ fetch('data.json', { cache: 'no-cache' })
     state.data = data;
     const at = new Date(data.generatedAt);
     document.getElementById('updated').textContent = `Bijgewerkt ${at.toLocaleString('nl-BE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Brussels' })}`;
+    // The installed app opens on the favourite team; the website keeps the weekend as start page.
+    if (standalone && !location.hash && favTeams().length) history.replaceState(null, '', '#/mijn');
     render();
   })
   .catch(() => {

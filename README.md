@@ -50,10 +50,26 @@ the results.
 
 Anonymous visitor statistics via [GoatCounter](https://davoz-zwevegem.goatcounter.com)
 (no cookies, no personal data). Automatic counting is off (`no_onload`); `app.js` counts each
-`#/…` view as its own page (`/`, `/weetjes`, `/ploeg/<team>`, `/ploeg/<team>/match/<nr>`) and
+`#/…` view as its own page (`/`, `/weetjes`, `/ploegen`, `/mijn-ploeg/<team>`, `/ploeg/<team>`,
+`/ploeg/<team>/match/<nr>`), records `favoriet-aan` / `favoriet-uit` events when a star is tapped, and
 records events for clicks with a `data-track` attribute (calendar buttons, Maps routes), for
 "Installeer app", installations and launches from the home screen. GoatCounter ignores
 localhost, so local testing is not counted.
+
+## Navigation and favourite teams
+
+A tab bar at the bottom holds four sections: **Weekend** (`#/`), **Mijn ploeg** (`#/mijn`),
+**Ploegen** (`#/ploegen`, all teams grouped by `group` in `config.json`: Seniors, Jeugd, and the
+cup series under Beker) and **Weetjes** (`#/weetjes`). A star on every team marks it as a
+favourite. Favourites are stored in `localStorage` (`davoz-favorieten`, a list of team keys), so
+only on that device and without cookies; when storage is blocked the site works without them.
+Favourites appear at the top of the weekend page and on Mijn ploeg (with a switcher when there are
+several). The installed app opens on Mijn ploeg when a favourite is set; the website keeps the
+weekend as its start page. Team keys contain the VolleyAdmin team id, so favourites may need to be
+set again when a new season brings new ids.
+
+Text sizes are in `rem` and running text uses the system font, so on iPhone the site follows the
+text size set in iOS.
 
 ## Calendar subscriptions
 
