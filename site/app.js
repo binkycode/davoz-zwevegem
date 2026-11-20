@@ -40,7 +40,7 @@ const matchHref = (t, m) => `#/${encodeURIComponent(t.key)}/${encodeURIComponent
 // '#/' (or no hash) is the club weekend overview; '#/<team>' and '#/<team>/<match nr>' the team pages.
 function route() {
   const [, teamKey, matchNr] = location.hash.split('/').map(decodeURIComponent);
-  if (['weetjes', 'ploegen', 'mijn'].includes(teamKey)) return { page: teamKey, team: null, match: null };
+  if (['weetjes', 'ploegen', 'mijn', 'installeren'].includes(teamKey)) return { page: teamKey, team: null, match: null };
   const team = teamKey ? state.data.teams.find((t) => t.key === teamKey) : null;
   if (!team) return { page: 'weekend', team: null, match: null };
   const match = matchNr ? team.matches.find((m) => m.nr === matchNr) : null;
@@ -275,7 +275,7 @@ function renderMijn(t) {
     <div class="seg fav-switch" role="group" aria-label="Kies een van je ploegen">
       ${favs.map((f) => `<button type="button" data-mijn="${esc(f.key)}" aria-pressed="${f.key === t.key}">${esc(f.label)}</button>`).join('')}
     </div>` : '';
-  return switcher + renderTeam(t);
+  return installCard() + switcher + renderTeam(t);
 }
 
 // Top of the weekend page: this weekend's matches of the favourite teams.
@@ -555,6 +555,7 @@ function renderWeekend() {
       </div>
     </section>
     ${favCard(items, title)}
+    ${installCard()}
     <div class="layout">
       <div class="col-main wk-days">${dayBlocks}</div>
       <aside class="col-side">
@@ -754,6 +755,87 @@ function renderWeetjes() {
     </div>`;
 }
 
+// ---- Install hint ("Zet op beginscherm") ------------------------------------------------
+// iOS never offers installation itself, so iPhone users get the steps; Android gets the real button.
+
+// iPadOS reports itself as a Mac, but with touch.
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const HINT_KEY = 'davoz-installatie-tip';
+const SHARE_ICON = '<svg class="ios-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>';
+const ADD_ICON = '<svg class="ios-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/></svg>';
+
+function hintDismissed() {
+  try {
+    const v = localStorage.getItem(HINT_KEY);
+    return v === 'nooit' || (v && Number(v) > Date.now());
+  } catch { return false; }
+}
+
+let hintCounted = false;
+// Shown in the browser only, once somebody follows a team: that is when a home screen icon pays off.
+function installCard() {
+  if (standalone || hintDismissed() || !favTeams().length) return '';
+  if (!isIOS && !installPrompt) return '';
+  if (!hintCounted) { hintCounted = true; trackEvent('installatie-tip-getoond', `Installatietip getoond (${isIOS ? 'iPhone/iPad' : 'Android'})`); }
+  const favs = favTeams();
+  const who = favs.length === 1 ? favs[0].label : 'jouw ploegen';
+  return `
+    <section class="install-card" aria-labelledby="install-title">
+      <img class="install-icon" src="icons/icon-192.png" alt="" width="56" height="56">
+      <div class="install-body">
+        <h2 id="install-title">Zet Davoz op je beginscherm</h2>
+        <p>Dan open je ${esc(who)} met één tik, ook zonder internet. Gratis, zonder App Store.</p>
+        ${isIOS ? iosSteps() : '<button type="button" class="btn" data-install>Installeer app</button>'}
+        <div class="install-actions">
+          <button type="button" class="btn btn-ghost" data-hint="later">Niet nu</button>
+          <button type="button" class="link-btn" data-hint="nooit">Niet meer tonen</button>
+          ${isIOS ? '<a href="#/installeren">Meer uitleg</a>' : ''}
+        </div>
+      </div>
+    </section>`;
+}
+
+const iosSteps = () => `
+  <ol class="install-steps">
+    <li>Tik op ${SHARE_ICON}<b>Deel</b>. Zie je die knop niet, tik dan eerst op <b>•••</b>.</li>
+    <li>Kies ${ADD_ICON}<b>Zet op beginscherm</b>. Staat het er niet, scroll dan wat naar beneden.</li>
+    <li>Tik op <b>Voeg toe</b>.</li>
+  </ol>`;
+
+// "Niet nu" hides the card for 30 days, "Niet meer tonen" for good.
+function dismissHint(how) {
+  try { localStorage.setItem(HINT_KEY, how === 'nooit' ? 'nooit' : String(Date.now() + 30 * 864e5)); } catch { /* no storage */ }
+  trackEvent(how === 'nooit' ? 'installatie-tip-nooit' : 'installatie-tip-later', how === 'nooit' ? 'Installatietip: niet meer tonen' : 'Installatietip: niet nu');
+  render();
+}
+
+// Instructions page, for the "Meer uitleg" link and a QR code on a poster.
+function renderInstall() {
+  document.title = 'Installeer de app — Davoz Zwevegem';
+  const already = standalone ? '<p class="install-done">Je gebruikt de app al. Je vindt Davoz op je beginscherm.</p>' : '';
+  return `
+    <div class="page-head"><div><h1>Installeer de app</h1><span class="muted">Davoz op je beginscherm: opent meteen op je ploeg, werkt ook zonder internet, gratis en zonder App Store.</span></div></div>
+    ${already}
+    <div class="install-guides">
+      <section class="card install-guide${isIOS ? ' is-yours' : ''}" aria-labelledby="gids-iphone">
+        <h2 id="gids-iphone" class="section-title">iPhone en iPad</h2>
+        <span class="muted">In Safari of Chrome:</span>
+        ${iosSteps()}
+        <span class="muted">Daarna staat Davoz tussen je apps. Open hem voortaan via dat icoon.</span>
+      </section>
+      <section class="card install-guide${!isIOS ? ' is-yours' : ''}" aria-labelledby="gids-android">
+        <h2 id="gids-android" class="section-title">Android</h2>
+        ${installPrompt ? '<button type="button" class="btn" data-install>Installeer app</button><span class="muted">Of volg de stappen hieronder.</span>' : ''}
+        <ol class="install-steps">
+          <li>Tik in Chrome rechtsboven op <b>⋮</b>.</li>
+          <li>Kies <b>App installeren</b> of <b>Toevoegen aan startscherm</b>.</li>
+          <li>Tik op <b>Installeren</b>.</li>
+        </ol>
+      </section>
+    </div>
+    <p class="muted" style="margin-top:20px">Tip: duid eerst je ploeg aan met de ster bij <a href="#/ploegen">Ploegen</a>. De app opent dan meteen op die ploeg.</p>`;
+}
+
 // ---- Analytics (GoatCounter: anonymous, no cookies) -------------------------------------
 
 const slug = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -766,7 +848,7 @@ const trackEvent = (name, title) => gc({ path: name, title: title ?? name, event
 // The site navigates with '#/…' links, so every view is counted as its own page.
 let lastTracked = null;
 function trackPage(page, team, match) {
-  const path = page === 'weetjes' ? '/weetjes' : page === 'ploegen' ? '/ploegen'
+  const path = page === 'weetjes' ? '/weetjes' : page === 'ploegen' ? '/ploegen' : page === 'installeren' ? '/installeren'
     : page === 'mijn' ? (team ? `/mijn-ploeg/${slug(team.label)}` : '/mijn-ploeg')
     : !team ? '/' : `/ploeg/${slug(team.label)}${match ? `/match/${slug(match.nr)}` : ''}`;
   if (path === lastTracked) return;
@@ -783,6 +865,7 @@ function render() {
   renderTabbar(page, team);
   const app = document.getElementById('app');
   app.innerHTML = page === 'weetjes' ? renderWeetjes() : page === 'ploegen' ? renderPloegen() : page === 'mijn' ? renderMijn(team)
+    : page === 'installeren' ? renderInstall()
     : !team ? renderWeekend() : match ? renderMatch(team, match) : renderTeam(team);
   trackPage(page, team, match);
 }
@@ -804,6 +887,9 @@ document.addEventListener('click', (e) => {
   if (fav) { toggleFav(fav.dataset.fav); return; }
   const mijn = e.target.closest('[data-mijn]');
   if (mijn) { state.mijnKey = mijn.dataset.mijn; render(); return; }
+  if (e.target.closest('[data-install]')) { runInstallPrompt(); return; }
+  const hint = e.target.closest('[data-hint]');
+  if (hint) { dismissHint(hint.dataset.hint); return; }
   const tab = e.target.closest('[data-tab]');
   if (tab) { state.tab = tab.dataset.tab; render(); }
   const week = e.target.closest('[data-week]');
@@ -839,23 +925,37 @@ showOnline();
 
 // Android/desktop Chrome offer installation through this event; iOS uses Share → Add to Home Screen.
 let installPrompt = null;
+// Pages that may show the install card are redrawn when Android offers installation later on.
+const redrawIfCardPage = () => { if (state.data && ['weekend', 'mijn'].includes(route().page)) render(); };
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   installPrompt = e;
   if (installButton) installButton.hidden = false;
+  redrawIfCardPage();
 });
-installButton?.addEventListener('click', async () => {
+async function runInstallPrompt() {
   if (!installPrompt) return;
   trackEvent('app-installeer-klik', 'Klik op Installeer app');
   installPrompt.prompt();
   await installPrompt.userChoice;
   installPrompt = null;
-  installButton.hidden = true;
-});
+  if (installButton) installButton.hidden = true;
+  redrawIfCardPage();
+}
+installButton?.addEventListener('click', runInstallPrompt);
 window.addEventListener('appinstalled', () => { if (installButton) installButton.hidden = true; trackEvent('app-geinstalleerd', 'App geïnstalleerd'); });
 // Opened from the home screen (installed app) rather than in the browser.
 const standalone = !!(window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone);
-if (standalone) trackEvent('app-geopend', 'App geopend vanaf startscherm');
+if (standalone) {
+  trackEvent('app-geopend', 'App geopend vanaf startscherm');
+  // Counted once per installation: an installed iPhone web app has its own storage, separate from Safari.
+  try {
+    if (!localStorage.getItem('davoz-app-gestart')) {
+      localStorage.setItem('davoz-app-gestart', new Date().toISOString());
+      trackEvent('app-eerste-start', `App voor het eerst gestart (${isIOS ? 'iPhone/iPad' : 'Android/andere'})`);
+    }
+  } catch { /* no storage: skip the count */ }
+}
 
 fetch('data.json', { cache: 'no-cache' })
   .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })

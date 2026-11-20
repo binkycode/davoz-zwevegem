@@ -40,6 +40,12 @@ loaded `data.json`, so the results stay visible offline. It fetches from the net
 so online visitors always get fresh data. Bump `CACHE` in `sw.js` when the list of cached
 files changes.
 
+iOS never offers installation by itself, so once somebody has a favourite team the weekend page
+and Mijn ploeg show an install card in the browser: on iPhone/iPad the Share → "Zet op
+beginscherm" steps, on Android a button that opens Chrome's install prompt. "Niet nu" hides it for
+30 days, "Niet meer tonen" for good (`localStorage` key `davoz-installatie-tip`). `#/installeren`
+is a page with the steps for both platforms, meant for the "Meer uitleg" link and a QR code.
+
 The volleyball mark is defined once in `scripts/ball.mjs` (three panels turning around the
 centre, built from circular arcs). `node scripts/ball.mjs` prints the SVG path used for the
 favicon and the header in `site/index.html`; `node scripts/make-icons.mjs` draws the PNG icons
@@ -50,11 +56,16 @@ the results.
 
 Anonymous visitor statistics via [GoatCounter](https://davoz-zwevegem.goatcounter.com)
 (no cookies, no personal data). Automatic counting is off (`no_onload`); `app.js` counts each
-`#/…` view as its own page (`/`, `/weetjes`, `/ploegen`, `/mijn-ploeg/<team>`, `/ploeg/<team>`,
-`/ploeg/<team>/match/<nr>`), records `favoriet-aan` / `favoriet-uit` events when a star is tapped, and
-records events for clicks with a `data-track` attribute (calendar buttons, Maps routes), for
-"Installeer app", installations and launches from the home screen. GoatCounter ignores
-localhost, so local testing is not counted.
+`#/…` view as its own page (`/`, `/weetjes`, `/ploegen`, `/installeren`, `/mijn-ploeg/<team>`,
+`/ploeg/<team>`, `/ploeg/<team>/match/<nr>`), records `favoriet-aan` / `favoriet-uit` events when a
+star is tapped, and records events for clicks with a `data-track` attribute (calendar buttons,
+Maps routes), for "Installeer app", installations and launches from the home screen.
+
+Install funnel: `installatie-tip-getoond` (once per page load), `installatie-tip-later` /
+`installatie-tip-nooit`, `app-installeer-klik` and `app-geinstalleerd` (Android only), and
+`app-eerste-start`, sent once per installation on its first launch from the home screen. That
+last one is the closest thing to an install count on iPhone, where Safari reports nothing.
+`app-geopend` counts every launch. GoatCounter ignores localhost, so local testing is not counted.
 
 ## Navigation and favourite teams
 
