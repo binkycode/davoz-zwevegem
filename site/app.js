@@ -153,13 +153,10 @@ function bickyCard(t, played) {
     </section>`;
 }
 
-function rankingCard(t) {
-  if (!t.ranking.length) return '';
+function rankingTable(t) {
   // Without win/loss counters in the feed (youth series) the column would only show 0–0.
   const showRecord = t.ranking.some((r) => r.won + r.lost > 0);
   return `
-    <section class="card" aria-labelledby="klassement">
-      <div class="section-head"><h2 id="klassement" class="section-title">Klassement</h2><span class="muted" style="font-size:14px">${esc(t.division)}</span></div>
       <div class="table-box">
         <table>
           <thead><tr><th scope="col">#</th><th scope="col">Ploeg</th><th scope="col" class="num">M</th>${showRecord ? '<th scope="col" class="num">W–V</th>' : ''}<th scope="col" class="num">Sets</th><th scope="col" class="num">Ptn</th></tr></thead>
@@ -169,7 +166,15 @@ function rankingCard(t) {
               <td class="num">${r.setsWon}–${r.setsLost}</td><td class="num pts">${r.points}</td>
             </tr>`).join('')}</tbody>
         </table>
-      </div>
+      </div>`;
+}
+
+function rankingCard(t) {
+  if (!t.ranking.length) return '';
+  return `
+    <section class="card" aria-labelledby="klassement">
+      <div class="section-head"><h2 id="klassement" class="section-title">Klassement</h2><span class="muted" style="font-size:14px">${esc(t.division)}</span></div>
+      ${rankingTable(t)}
     </section>`;
 }
 
@@ -179,7 +184,8 @@ function renderTeam(t) {
   const open = t.matches.filter((m) => !m.result && m.date < today);
   const last = played.at(-1);
   const next = upcoming[0];
-  if (!state.tab) state.tab = played.length ? 'uitslagen' : 'kalender';
+  const hasRanking = t.ranking.length > 0;
+  if (!state.tab || (state.tab === 'klassement' && !hasRanking)) state.tab = played.length ? 'uitslagen' : 'kalender';
   const list = state.tab === 'uitslagen' ? [...played, ...open].sort((a, b) => b.date.localeCompare(a.date)) : upcoming;
   document.title = `${t.label} — Davoz Zwevegem`;
   const rank = t.ranking.find((r) => r.teamId === t.teamId)?.pos;
@@ -207,18 +213,22 @@ function renderTeam(t) {
           </section>` : ''}
         <section aria-label="Wedstrijden">
           <div class="tabs" role="tablist">
-            <button class="tab" role="tab" data-tab="uitslagen" aria-selected="${state.tab === 'uitslagen'}">Uitslagen (${played.length + open.length})</button>
-            <button class="tab" role="tab" data-tab="kalender" aria-selected="${state.tab === 'kalender'}">Kalender (${upcoming.length})</button>
+            <button class="tab" role="tab" data-tab="uitslagen" aria-selected="${state.tab === 'uitslagen'}">Uitslagen <span class="tab-count">${played.length + open.length}</span></button>
+            <button class="tab" role="tab" data-tab="kalender" aria-selected="${state.tab === 'kalender'}">Kalender <span class="tab-count">${upcoming.length}</span></button>
+            ${hasRanking ? `<button class="tab" role="tab" data-tab="klassement" aria-selected="${state.tab === 'klassement'}">Klassement</button>` : ''}
           </div>
+          ${state.tab === 'klassement' ? `
+          <div class="ranking-panel" role="tabpanel" aria-label="Klassement ${esc(t.division)}">
+            ${rankingTable(t)}
+          </div>` : `
           <div class="match-list" role="tabpanel">
             ${list.length ? list.map((m) => matchRow(t, m)).join('') : `<p class="empty">${state.tab === 'uitslagen' ? 'Nog geen gespeelde wedstrijden.' : 'Geen wedstrijden meer gepland.'}</p>`}
-          </div>
+          </div>`}
         </section>
       </div>
       <aside class="col-side">
         ${statsCard(t, played)}
         ${bickyCard(t, played)}
-        ${rankingCard(t)}
         ${calendarCard(t.calendar, 'In je agenda', `Alle matchen van ${t.label} in je gsm-agenda, met sporthal en adres. Verplaatste matchen passen zich vanzelf aan.`, slug(t.label), t.label)}
       </aside>
     </div>`;

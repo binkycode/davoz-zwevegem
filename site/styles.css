@@ -394,3 +394,11 @@ a.h2h-row:hover { color: var(--ink); border-color: var(--muted); }
 .install-guide { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
 .install-guide.is-yours { border: 2px solid var(--accent); order: -1; }
 .install-done { margin: 0 0 16px; padding: 12px 16px; border-radius: 12px; background: var(--us-row); font-weight: 600; max-width: 640px; }
+
+/* Ranking as third tab on the team page */
+.ranking-panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 8px 12px; }
+.tabs { overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { flex: 0 0 auto; white-space: nowrap; }
+.tab-count { font: 600 0.8125rem var(--body); color: var(--muted); vertical-align: 2px; margin-left: 2px; }
+@media (max-width: 400px) { .tabs { gap: 0; } .tab { padding: 0 8px; } }
