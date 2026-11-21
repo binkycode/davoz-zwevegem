@@ -901,7 +901,14 @@ document.addEventListener('click', (e) => {
   const hint = e.target.closest('[data-hint]');
   if (hint) { dismissHint(hint.dataset.hint); return; }
   const tab = e.target.closest('[data-tab]');
-  if (tab) { state.tab = tab.dataset.tab; render(); }
+  if (tab && tab.dataset.tab !== state.tab) {
+    state.tab = tab.dataset.tab;
+    render();
+    // Only real taps are counted; the tab a team page opens on is not.
+    const t = state.data.teams.find((x) => x.key === state.teamKey);
+    const name = tab.dataset.tab.charAt(0).toUpperCase() + tab.dataset.tab.slice(1);
+    if (t) trackEvent(`tab-${tab.dataset.tab}/${slug(t.label)}`, `${name}: ${t.label}`);
+  }
   const week = e.target.closest('[data-week]');
   if (week) { state.week = week.dataset.week; render(); if (week.dataset.week === 'volgend') trackEvent('weekend-volgend', 'Volgend weekend bekeken'); }
   const mode = e.target.closest('[data-ft-mode]');

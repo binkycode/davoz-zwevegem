@@ -58,7 +58,8 @@ Anonymous visitor statistics via [GoatCounter](https://davoz-zwevegem.goatcounte
 (no cookies, no personal data). Automatic counting is off (`no_onload`); `app.js` counts each
 `#/…` view as its own page (`/`, `/weetjes`, `/ploegen`, `/installeren`, `/mijn-ploeg/<team>`,
 `/ploeg/<team>`, `/ploeg/<team>/match/<nr>`), records `favoriet-aan` / `favoriet-uit` events when a
-star is tapped, and records events for clicks with a `data-track` attribute (calendar buttons,
+star is tapped, `tab-uitslagen/<team>`, `tab-kalender/<team>` and `tab-klassement/<team>` events when a
+tab on a team page is tapped (not for the tab the page opens on), and records events for clicks with a `data-track` attribute (calendar buttons,
 Maps routes), for "Installeer app", installations and launches from the home screen.
 
 Install funnel: `installatie-tip-getoond` (once per page load), `installatie-tip-later` /
