@@ -164,9 +164,6 @@ a.team-link:hover { color: var(--ink); background: var(--us-row); }
 .next-body strong { font: 700 1.375rem/1.2 var(--display); }
 
 /* Tabs */
-.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 12px; }
-.tab { min-height: 44px; padding: 0 14px; border: 0; background: none; color: var(--muted); font: 700 1.25rem var(--display); text-transform: uppercase; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; }
-.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
 
 /* Match list */
 .match-list { display: flex; flex-direction: column; gap: 10px; }
@@ -397,8 +394,7 @@ a.h2h-row:hover { color: var(--ink); border-color: var(--muted); }
 
 /* Ranking as third tab on the team page */
 .ranking-panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 8px 12px; }
-.tabs { overflow-x: auto; scrollbar-width: none; }
-.tabs::-webkit-scrollbar { display: none; }
-.tab { flex: 0 0 auto; white-space: nowrap; }
-.tab-count { font: 600 0.8125rem var(--body); color: var(--muted); vertical-align: 2px; margin-left: 2px; }
-@media (max-width: 400px) { .tabs { gap: 0; } .tab { padding: 0 8px; } }
+/* Uitslagen / Kalender / Klassement: a segmented control, like the weekend switcher */
+.team-seg { width: 100%; margin-bottom: 12px; }
+.team-seg button { flex: 1 1 0; padding: 0 6px; font-size: 1rem; }
+.tab-count { font-size: 0.8125rem; font-weight: 500; opacity: 0.75; margin-left: 2px; }

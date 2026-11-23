@@ -212,16 +212,16 @@ function renderTeam(t) {
             </div>
           </section>` : ''}
         <section aria-label="Wedstrijden">
-          <div class="tabs" role="tablist">
-            <button class="tab" role="tab" data-tab="uitslagen" aria-selected="${state.tab === 'uitslagen'}">Uitslagen <span class="tab-count">${played.length + open.length}</span></button>
-            <button class="tab" role="tab" data-tab="kalender" aria-selected="${state.tab === 'kalender'}">Kalender <span class="tab-count">${upcoming.length}</span></button>
-            ${hasRanking ? `<button class="tab" role="tab" data-tab="klassement" aria-selected="${state.tab === 'klassement'}">Klassement</button>` : ''}
+          <div class="seg team-seg" role="group" aria-label="Toon">
+            <button type="button" data-tab="uitslagen" aria-pressed="${state.tab === 'uitslagen'}">Uitslagen <span class="tab-count">${played.length + open.length}</span></button>
+            <button type="button" data-tab="kalender" aria-pressed="${state.tab === 'kalender'}">Kalender <span class="tab-count">${upcoming.length}</span></button>
+            ${hasRanking ? `<button type="button" data-tab="klassement" aria-pressed="${state.tab === 'klassement'}">Klassement</button>` : ''}
           </div>
           ${state.tab === 'klassement' ? `
-          <div class="ranking-panel" role="tabpanel" aria-label="Klassement ${esc(t.division)}">
+          <div class="ranking-panel" aria-label="Klassement ${esc(t.division)}">
             ${rankingTable(t)}
           </div>` : `
-          <div class="match-list" role="tabpanel">
+          <div class="match-list">
             ${list.length ? list.map((m) => matchRow(t, m)).join('') : `<p class="empty">${state.tab === 'uitslagen' ? 'Nog geen gespeelde wedstrijden.' : 'Geen wedstrijden meer gepland.'}</p>`}
           </div>`}
         </section>
@@ -904,6 +904,7 @@ document.addEventListener('click', (e) => {
   if (tab && tab.dataset.tab !== state.tab) {
     state.tab = tab.dataset.tab;
     render();
+    document.querySelector(`[data-tab="${state.tab}"]`)?.focus();
     // Only real taps are counted; the tab a team page opens on is not.
     const t = state.data.teams.find((x) => x.key === state.teamKey);
     const name = tab.dataset.tab.charAt(0).toUpperCase() + tab.dataset.tab.slice(1);
