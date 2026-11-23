@@ -185,7 +185,7 @@ function renderTeam(t) {
   const last = played.at(-1);
   const next = upcoming[0];
   const hasRanking = t.ranking.length > 0;
-  if (!state.tab || (state.tab === 'klassement' && !hasRanking)) state.tab = played.length ? 'uitslagen' : 'kalender';
+  if (!state.tab || (state.tab === 'klassement' && !hasRanking)) state.tab = hasRanking ? 'klassement' : played.length ? 'uitslagen' : 'kalender';
   const list = state.tab === 'uitslagen' ? [...played, ...open].sort((a, b) => b.date.localeCompare(a.date)) : upcoming;
   document.title = `${t.label} — Davoz Zwevegem`;
   const rank = t.ranking.find((r) => r.teamId === t.teamId)?.pos;
@@ -213,9 +213,9 @@ function renderTeam(t) {
           </section>` : ''}
         <section aria-label="Wedstrijden">
           <div class="seg team-seg" role="group" aria-label="Toon">
+            ${hasRanking ? `<button type="button" data-tab="klassement" aria-pressed="${state.tab === 'klassement'}">Klassement</button>` : ''}
             <button type="button" data-tab="uitslagen" aria-pressed="${state.tab === 'uitslagen'}">Uitslagen <span class="tab-count">${played.length + open.length}</span></button>
             <button type="button" data-tab="kalender" aria-pressed="${state.tab === 'kalender'}">Kalender <span class="tab-count">${upcoming.length}</span></button>
-            ${hasRanking ? `<button type="button" data-tab="klassement" aria-pressed="${state.tab === 'klassement'}">Klassement</button>` : ''}
           </div>
           ${state.tab === 'klassement' ? `
           <div class="ranking-panel" aria-label="Klassement ${esc(t.division)}">
